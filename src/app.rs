@@ -1,5 +1,5 @@
 use crate::{sources::CalDavSource, TaskProvider, TaskSource};
-use egui::{Color32, ScrollArea, Stroke, Style, TextEdit, Ui};
+use egui::{Color32, ScrollArea, Stroke, Style, TextEdit, Ui, Label};
 use egui_notify::{Toast, Toasts};
 use itertools::Itertools;
 
@@ -96,7 +96,7 @@ impl TaskPickerApp {
                                         ui.heading(task.title);
                                         let mut description = task.description.clone();
                                         description.truncate(50);
-                                        ui.label(description);
+                                        ui.label(description.replace("\\\\n", "\n"));
                                     });
                                 });
                                 task_counter += 1;
