@@ -1,21 +1,17 @@
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
-#[derive(serde::Deserialize, serde::Serialize)]
-#[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct TaskPickerApp {
-    // Example stuff:
-    label: String,
+use crate::TaskSource;
 
-    // this how you opt-out of serialization of a member
-    #[serde(skip)]
-    value: f32,
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+pub struct TaskPickerApp {
+    add_task_source: bool,
+    sources: Vec<TaskSource>,
 }
 
 impl Default for TaskPickerApp {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
+            add_task_source: false,
+            sources: Vec::default(),
         }
     }
 }
@@ -45,7 +41,6 @@ impl eframe::App for TaskPickerApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-
         #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -58,12 +53,26 @@ impl eframe::App for TaskPickerApp {
             });
         });
 
-        egui::SidePanel::right("side_panel").resizable(false).show(ctx, |ui| {
-            ui.heading("Task Sources");
-        });
+        egui::SidePanel::right("side_panel")
+            .resizable(false)
+            .show(ctx, |ui| {
+                ui.heading("Task Sources");
+
+                if ui.button("Add").clicked() {
+                    self.add_task_source = true;
+                }
+            });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Task Picker");
         });
+
+        if self.add_task_source {
+            egui::Window::new("Add Task Source")
+                .open(&mut self.add_task_source)
+                .show(ctx, |ui| {
+                    ui.label("Ups");
+                });
+        }
     }
 }
