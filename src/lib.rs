@@ -7,7 +7,7 @@ pub use app::TaskPickerApp;
 use serde::{Serialize, Deserialize};
 use sources::CalDavSource;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
     pub title: String,
 }
@@ -21,11 +21,12 @@ pub enum TaskSource {
 
 trait TaskProvider {
     fn get_label(&self) -> &str;
-    fn get_tasks(&self) -> anyhow::Result<Vec<Task>>;
+    fn get_tasks(&mut self) -> anyhow::Result<Vec<Task>>;
+    fn reset_cache(&mut self);
 }
 
 impl TaskProvider for TaskSource {
-    fn get_tasks(&self) -> anyhow::Result<Vec<Task>> {
+    fn get_tasks(&mut self) -> anyhow::Result<Vec<Task>> {
         match self {
             TaskSource::CalDav(c) => c.get_tasks(),
         }
@@ -34,6 +35,12 @@ impl TaskProvider for TaskSource {
     fn get_label(&self) -> &str {
         match self {
             TaskSource::CalDav(c) => c.get_label(),
+        }
+    }
+
+    fn reset_cache(&mut self) {
+        match self {
+            TaskSource::CalDav(c) => c.reset_cache(),
         }
     }
 }

@@ -1,10 +1,16 @@
+use egui::TextEdit;
+use egui_notify::{Toast, Toasts};
+use itertools::Itertools;
 use crate::{sources::CalDavSource, TaskProvider, TaskSource};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct TaskPickerApp {
-    new_task_source: Option<CalDavSource>,
     sources: Vec<(TaskSource, bool)>,
+    #[serde(skip)]
+    messages: Toasts,
+    #[serde(skip)]
+    new_task_source: Option<CalDavSource>,
 }
 
 impl Default for TaskPickerApp {
@@ -12,6 +18,7 @@ impl Default for TaskPickerApp {
         Self {
             new_task_source: None,
             sources: Vec::default(),
+            messages: Toasts::default(),
         }
     }
 }
@@ -51,7 +58,7 @@ impl TaskPickerApp {
                 });
                 ui.horizontal(|ui| {
                     ui.label("Password");
-                    ui.text_edit_singleline(&mut new_task_source.password);
+                    ui.add(TextEdit::singleline(&mut new_task_source.password).password(true));
                 });
             }
 
@@ -117,7 +124,35 @@ impl eframe::App for TaskPickerApp {
             });
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            self.messages.show(ctx);
+
             ui.heading("Task Picker");
+
+            if ui.button("Refresh").clicked() {
+                for (t, _) in &mut self.sources {
+                    t.reset_cache();
+                }
+            }
+
+            // Get all tasks for all active source
+            for (source, active) in &mut self.sources {
+                if *active {
+                    // Query for the task if this source
+                    match source.get_tasks() {
+                        Ok(tasks) => {
+                            for task in tasks {
+                                ui.label(task.title);
+                            }
+                        }
+                        Err(e) => {
+                            let message = e.to_string().chars().chunks(50).into_iter().map(|c| c.collect::<String>()).join("\n");
+                            let mut toast = Toast::error(message);
+                            toast.set_closable(true);
+                            self.messages.add(toast);
+                        }
+                    }
+                }
+            }
         });
 
         if self.new_task_source.is_some() {
