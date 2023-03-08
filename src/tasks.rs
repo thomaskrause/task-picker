@@ -16,7 +16,7 @@ pub struct Task {
     pub due: Option<DateTime<Utc>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct TaskManager {
     tasks: Arc<Mutex<Vec<Task>>>,
@@ -25,17 +25,6 @@ pub struct TaskManager {
     last_connection_attempt: Option<std::time::Instant>,
     #[serde(skip)]
     last_error: Arc<Mutex<Option<anyhow::Error>>>,
-}
-
-impl Default for TaskManager {
-    fn default() -> Self {
-        Self {
-            tasks: Default::default(),
-            sources: Default::default(),
-            last_connection_attempt: Default::default(),
-            last_error: Default::default(),
-        }
-    }
 }
 
 fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
@@ -52,16 +41,14 @@ fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
     result.sort_by(|a, b| {
         if let (Some(a), Some(b)) = (a.due, b.due) {
             a.cmp(&b)
-        } else {
-            if a.due.is_none() {
-                if b.due.is_none() {
-                    Ordering::Equal
-                } else {
-                    Ordering::Greater
-                }
+        } else if a.due.is_none() {
+            if b.due.is_none() {
+                Ordering::Equal
             } else {
-                Ordering::Less
+                Ordering::Greater
             }
+        } else {
+            Ordering::Less
         }
     });
 
@@ -110,7 +97,6 @@ impl TaskManager {
 
     pub fn get_and_clear_last_err(&self) -> Option<anyhow::Error> {
         let mut last_error = self.last_error.lock().expect("Lock poisoning");
-        let result = last_error.take();
-        result
+        last_error.take()
     }
 }
