@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crate::{sources::CalDavSource, tasks::TaskManager};
-use egui::{ScrollArea, TextEdit, Ui, Vec2};
+use egui::{Color32, ScrollArea, TextEdit, Ui, Vec2};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -10,6 +10,7 @@ use itertools::Itertools;
 #[serde(default)]
 pub struct TaskPickerApp {
     task_manager: TaskManager,
+    selected_task: Option<usize>,
     refresh_rate: Duration,
     #[serde(skip)]
     last_refreshed: Instant,
@@ -25,6 +26,7 @@ impl Default for TaskPickerApp {
         task_manager.refresh();
         Self {
             task_manager: TaskManager::default(),
+            selected_task: None,
             refresh_rate: Duration::from_secs(15),
             last_refreshed: Instant::now(),
             new_task_source: None,
@@ -50,7 +52,7 @@ impl TaskPickerApp {
 }
 
 impl TaskPickerApp {
-    fn add_new_task(&mut self, ctx: &egui::Context) {
+    fn add_new_task_source(&mut self, ctx: &egui::Context) {
         egui::Window::new("Add Task Source").show(ctx, |ui| {
             if let Some(new_task_source) = &mut self.new_task_source {
                 ui.horizontal(|ui| {
@@ -93,17 +95,39 @@ impl TaskPickerApp {
             // Get all tasks for all active source
             let mut task_counter = 0;
             for task in self.task_manager.tasks() {
-                ui.group(|ui| {
+                let mut group = egui::Frame::group(ui.style());
+                if Some(task_counter) == self.selected_task {
+                    group.fill = Color32::DARK_BLUE;
+                }
+                group.show(ui, |ui| {
                     let size = Vec2::new(200.0, 200.0);
                     ui.set_min_size(size);
                     ui.set_max_size(size);
                     ui.style_mut().wrap = Some(true);
 
                     ui.vertical(|ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            let already_selected = Some(task_counter) == self.selected_task;
+                            let caption = if already_selected {
+                                "Deselect"
+                            } else {
+                                "Select"
+                            };
+                            if ui.button(caption).clicked() {
+                                if Some(task_counter) == self.selected_task {
+                                    // Already selected, deselect
+                                    self.selected_task = None;
+                                } else {
+                                    // Select this task
+                                    self.selected_task = Some(task_counter);
+                                }
+                            }
+                        });
                         ui.heading(task.title.as_str().truncate_ellipse(80));
                         ui.label(task.description.as_str().truncate_ellipse(100));
                     });
                 });
+
                 task_counter += 1;
                 if task_counter % 5 == 0 {
                     ui.end_row();
@@ -190,7 +214,7 @@ impl eframe::App for TaskPickerApp {
         });
 
         if self.new_task_source.is_some() {
-            self.add_new_task(ctx);
+            self.add_new_task_source(ctx);
         } else if self
             .last_refreshed
             .elapsed()

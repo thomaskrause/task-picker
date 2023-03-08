@@ -48,11 +48,6 @@ fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
 impl TaskManager {
     /// Refresh task list in the background
     pub fn refresh(&mut self) {
-        {
-            let mut tasks = self.tasks.lock().expect("Lock poisoning");
-            tasks.clear();
-        }
-
         let mut sources = self.sources.clone();
         let last_error = self.last_error.clone();
         let tasks = self.tasks.clone();
@@ -69,8 +64,14 @@ impl TaskManager {
                 }
             }
             Err(e) => {
-                let mut last_error = last_error.lock().expect("Lock poisoning");
-                *last_error = Some(e);
+                {
+                    let mut tasks = tasks.lock().expect("Lock poisoning");
+                    tasks.clear();
+                }
+                {
+                    let mut last_error = last_error.lock().expect("Lock poisoning");
+                    *last_error = Some(e);
+                }
             }
         });
     }
