@@ -155,6 +155,9 @@ impl TaskPickerApp {
                             }
                         });
                         ui.heading(task.title.as_str().truncate_ellipse(80));
+
+                        ui.label(task.project.as_str());
+                        
                         if let Some(due) = &task.due {
                             let mut due_label = RichText::new(format!("Due: {}", due.to_rfc2822()));
                             let days_to_finish = due.signed_duration_since(Utc::now()).num_days();
@@ -165,6 +168,7 @@ impl TaskPickerApp {
                             };
                             ui.label(due_label);
                         }
+                        ui.separator();
                         if task.description.starts_with("https://") {
                             ui.hyperlink_to(
                                 task.description.as_str().truncate_ellipse(100),

@@ -71,6 +71,7 @@ impl CalDavSource {
                                 .map(|raw| Utc.datetime_from_str(raw.as_str(), "%Y%m%dT%H%M%S"))
                                 .transpose()?;
                             let task = Task {
+                                project: c.name().clone(),
                                 title: title.clone(),
                                 description,
                                 due,
@@ -123,9 +124,31 @@ impl GitHubSource {
                             .context("Missing 'state' field for issue")?
                             .as_str()
                     {
-                        let title = issue.get("title").context("Missing 'title' field for issue")?.as_str().unwrap_or_default();
-                        let url = issue.get("html_url").context("Missing 'html_url' field for issue")?.as_str().unwrap_or_default();
+                        let project = if let JsonValue::Object(repo) = issue
+                            .get("repository")
+                            .context("Missing 'repository' field for issue")?
+                        {
+                            repo
+                                .get("full_name")
+                                .context("Missing 'full_name' field for issue")?
+                                .as_str()
+                                .unwrap_or_default()
+                        } else {
+                            "GitHub"
+                        };
+
+                        let title = issue
+                            .get("title")
+                            .context("Missing 'title' field for issue")?
+                            .as_str()
+                            .unwrap_or_default();
+                        let url = issue
+                            .get("html_url")
+                            .context("Missing 'html_url' field for issue")?
+                            .as_str()
+                            .unwrap_or_default();
                         let task = Task {
+                            project: project.to_string(),
                             title: title.to_string(),
                             description: url.to_string(),
                             due: None,

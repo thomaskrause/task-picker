@@ -11,6 +11,7 @@ use crate::sources::{CalDavSource, GitHubSource};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
+    pub project: String,
     pub title: String,
     pub description: String,
     pub due: Option<DateTime<Utc>>,
