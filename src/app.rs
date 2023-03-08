@@ -110,9 +110,15 @@ impl TaskPickerApp {
         });
     }
 
-    fn trigger_refresh(&mut self) {
+    fn trigger_refresh(&mut self, manually_triggered: bool) {
         self.last_refreshed = Instant::now();
         self.task_manager.refresh();
+
+        if manually_triggered {
+            let mut msg = Toast::info("Refreshing task list in the background");
+            msg.set_duration(Some(Duration::from_secs(1)));
+            self.messages.add(msg);
+        }
     }
 }
 
@@ -161,7 +167,7 @@ impl eframe::App for TaskPickerApp {
                     self.task_manager.sources.remove(i);
                 }
                 if refresh {
-                    self.trigger_refresh();
+                    self.trigger_refresh(true);
                 }
 
                 if ui.button("Add CalDAV").clicked() {
@@ -175,10 +181,7 @@ impl eframe::App for TaskPickerApp {
             ui.heading("Task Picker");
 
             if ui.button("Refresh").clicked() {
-                self.trigger_refresh();
-                let mut msg = Toast::info("Refreshing task list in the background");
-                msg.set_duration(Some(Duration::from_secs(1)));
-                self.messages.add(msg);
+                self.trigger_refresh(true);
             }
 
             ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
@@ -186,14 +189,14 @@ impl eframe::App for TaskPickerApp {
 
         if self.new_task_source.is_some() {
             self.add_new_task(ctx);
-            self.trigger_refresh();
+            self.trigger_refresh(true);
         } else if self
             .last_refreshed
             .elapsed()
             .cmp(&self.refresh_rate)
             .is_gt()
         {
-            self.trigger_refresh();
+            self.trigger_refresh(false);
         }
 
         if let Some(err) = &self.task_manager.get_and_clear_last_err() {
