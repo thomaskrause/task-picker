@@ -1,4 +1,5 @@
 use anyhow::Result;
+use chrono::prelude::*;
 use eframe::epaint::ahash::HashMap;
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -60,6 +61,7 @@ impl CalDavSource {
                         .filter(|s| s.as_str() == "COMPLETED")
                         .is_some();
                     if !completed {
+                        dbg!(&props);
                         if let Some(title) = props.get("SUMMARY") {
                             let description: String = props
                                 .get("DESCRIPTION")
@@ -69,9 +71,14 @@ impl CalDavSource {
                                         .replace("\\,", ",")
                                 })
                                 .unwrap_or_default();
+                            let due = props
+                                .get("DUE")
+                                .map(|raw| Utc.datetime_from_str(raw.as_str(), "%Y%m%dT%H%M%S"))
+                                .transpose()?;
                             let task = Task {
                                 title: title.clone(),
                                 description,
+                                due,
                             };
                             result.push(task);
                         }

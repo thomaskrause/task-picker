@@ -1,6 +1,10 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    cmp::Ordering,
+    sync::{Arc, Mutex},
+};
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::sources::CalDavSource;
@@ -9,6 +13,7 @@ use crate::sources::CalDavSource;
 pub struct Task {
     pub title: String,
     pub description: String,
+    pub due: Option<DateTime<Utc>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -42,6 +47,24 @@ fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
             result.extend(new_tasks);
         }
     }
+
+    // Show the tasks that are due next first
+    result.sort_by(|a, b| {
+        if let (Some(a), Some(b)) = (a.due, b.due) {
+            a.cmp(&b)
+        } else {
+            if a.due.is_none() {
+                if b.due.is_none() {
+                    Ordering::Equal
+                } else {
+                    Ordering::Greater
+                }
+            } else {
+                Ordering::Less
+            }
+        }
+    });
+
     Ok(result)
 }
 

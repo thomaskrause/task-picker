@@ -100,7 +100,7 @@ impl TaskPickerApp {
                     group.fill = Color32::DARK_BLUE;
                 }
                 group.show(ui, |ui| {
-                    let size = Vec2::new(200.0, 200.0);
+                    let size = Vec2::new(250.0, 300.0);
                     ui.set_min_size(size);
                     ui.set_max_size(size);
                     ui.style_mut().wrap = Some(true);
@@ -124,6 +124,9 @@ impl TaskPickerApp {
                             }
                         });
                         ui.heading(task.title.as_str().truncate_ellipse(80));
+                        if let Some(due) = &task.due {
+                            ui.label(format!("Due: {}", due.to_rfc2822()));
+                        }
                         ui.label(task.description.as_str().truncate_ellipse(100));
                     });
                 });
