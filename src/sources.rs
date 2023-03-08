@@ -58,7 +58,7 @@ impl CalDavSource {
                     if let Some(title) = props.get("SUMMARY") {
                         let description: String = props
                             .get("DESCRIPTION")
-                            .map(|s| s.to_string())
+                            .map(|s| s.replace("\\\\", "\\").replace("\\n", "\n").replace("\\,", ","))
                             .unwrap_or_default();
                         let task = Task {
                             title: title.clone(),

@@ -99,7 +99,7 @@ impl TaskPickerApp {
                         ui.heading(&task.title);
                         let mut description = task.description.clone();
                         description.truncate(50);
-                        ui.label(description.replace("\\\\n", "\n"));
+                        ui.label(description);
                     });
                 });
                 task_counter += 1;
