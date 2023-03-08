@@ -124,10 +124,10 @@ impl GitHubSource {
                             .as_str()
                     {
                         let title = issue.get("title").context("Missing 'title' field for issue")?.as_str().unwrap_or_default();
-                        
+                        let url = issue.get("html_url").context("Missing 'html_url' field for issue")?.as_str().unwrap_or_default();
                         let task = Task {
                             title: title.to_string(),
-                            description: String::default(),
+                            description: url.to_string(),
                             due: None,
                         };
                         result.push(task);

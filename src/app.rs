@@ -122,7 +122,7 @@ impl TaskPickerApp {
 
     fn render_tasks(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
         // Create a grid layout where each row can show up to 5 tasks
-        egui::Grid::new("task-grid").num_columns(5).show(ui, |ui| {
+        egui::Grid::new("task-grid").num_columns(4).show(ui, |ui| {
             // Get all tasks for all active source
             let mut task_counter = 0;
             for task in self.task_manager.tasks() {
@@ -131,7 +131,7 @@ impl TaskPickerApp {
                     group.fill = Color32::DARK_BLUE;
                 }
                 group.show(ui, |ui| {
-                    let size = Vec2::new(250.0, 250.0);
+                    let size = Vec2::new(220.0, 250.0);
                     ui.set_min_size(size);
                     ui.set_max_size(size);
                     ui.style_mut().wrap = Some(true);
@@ -165,12 +165,19 @@ impl TaskPickerApp {
                             };
                             ui.label(due_label);
                         }
-                        ui.label(task.description.as_str().truncate_ellipse(100));
+                        if task.description.starts_with("https://") {
+                            ui.hyperlink_to(
+                                task.description.as_str().truncate_ellipse(100),
+                                task.description.as_str(),
+                            );
+                        } else {
+                            ui.label(task.description.as_str().truncate_ellipse(100));
+                        }
                     });
                 });
 
                 task_counter += 1;
-                if task_counter % 5 == 0 {
+                if task_counter % 4 == 0 {
                     ui.end_row();
                 }
             }
@@ -280,8 +287,7 @@ impl eframe::App for TaskPickerApp {
 
         if self.new_github_source.is_some() {
             self.add_github_source(ctx);
-        }
-        else if self.new_caldav_source.is_some() {
+        } else if self.new_caldav_source.is_some() {
             self.add_caldav_source(ctx);
         } else if self
             .last_refreshed
