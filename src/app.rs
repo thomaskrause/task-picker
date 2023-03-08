@@ -100,7 +100,7 @@ impl TaskPickerApp {
                     group.fill = Color32::DARK_BLUE;
                 }
                 group.show(ui, |ui| {
-                    let size = Vec2::new(250.0, 300.0);
+                    let size = Vec2::new(250.0, 250.0);
                     ui.set_min_size(size);
                     ui.set_max_size(size);
                     ui.style_mut().wrap = Some(true);

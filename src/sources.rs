@@ -59,7 +59,8 @@ impl CalDavSource {
                     let completed = props
                         .get("STATUS")
                         .filter(|s| s.as_str() == "COMPLETED")
-                        .is_some();
+                        .is_some()
+                        || props.contains_key("COMPLETED");
                     if !completed {
                         if let Some(title) = props.get("SUMMARY") {
                             let description: String = props
