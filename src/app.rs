@@ -1,8 +1,9 @@
 use std::time::{Duration, Instant};
 
 use crate::{sources::CalDavSource, tasks::TaskManager};
-use egui::{ScrollArea, TextEdit, Ui};
+use egui::{ScrollArea, TextEdit, Ui, Vec2};
 use egui_notify::{Toast, Toasts};
+use ellipse::Ellipse;
 use itertools::Itertools;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -92,14 +93,14 @@ impl TaskPickerApp {
             let mut task_counter = 0;
             for task in self.task_manager.tasks() {
                 ui.group(|ui| {
-                    ui.set_max_width(150.0);
+                    let size = Vec2::new(200.0, 200.0);
+                    ui.set_min_size(size);
+                    ui.set_max_size(size);
                     ui.style_mut().wrap = Some(true);
 
                     ui.vertical(|ui| {
-                        ui.heading(&task.title);
-                        let mut description = task.description.clone();
-                        description.truncate(50);
-                        ui.label(description);
+                        ui.heading(task.title.as_str().truncate_ellipse(80));
+                        ui.label(task.description.as_str().truncate_ellipse(100));
                     });
                 });
                 task_counter += 1;

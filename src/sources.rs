@@ -55,16 +55,26 @@ impl CalDavSource {
                         .into_iter()
                         .map(|(k, v)| (k.to_string(), v.to_string()))
                         .collect();
-                    if let Some(title) = props.get("SUMMARY") {
-                        let description: String = props
-                            .get("DESCRIPTION")
-                            .map(|s| s.replace("\\\\", "\\").replace("\\n", "\n").replace("\\,", ","))
-                            .unwrap_or_default();
-                        let task = Task {
-                            title: title.clone(),
-                            description,
-                        };
-                        result.push(task);
+                    let completed = props
+                        .get("STATUS")
+                        .filter(|s| s.as_str() == "COMPLETED")
+                        .is_some();
+                    if !completed {
+                        if let Some(title) = props.get("SUMMARY") {
+                            let description: String = props
+                                .get("DESCRIPTION")
+                                .map(|s| {
+                                    s.replace("\\\\", "\\")
+                                        .replace("\\n", "\n")
+                                        .replace("\\,", ",")
+                                })
+                                .unwrap_or_default();
+                            let task = Task {
+                                title: title.clone(),
+                                description,
+                            };
+                            result.push(task);
+                        }
                     }
                 }
             }

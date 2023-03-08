@@ -23,6 +23,7 @@ rayon = "1.7.0"
 
 # You only need serde if you want app persistence:
 serde = {version = "1", features = ["derive"]}
+ellipse = "0.2.0"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
