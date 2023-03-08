@@ -95,10 +95,20 @@ impl eframe::App for TaskPickerApp {
         egui::SidePanel::right("side_panel")
             .resizable(false)
             .show(ctx, |ui| {
-                ui.heading("Task Sources");
+                ui.heading("Sources");
 
-                for (s, enabled) in &mut self.sources {
-                    ui.checkbox(enabled, s.get_label());
+                let mut remove_source = None;
+                for i in 0..self.sources.len() {
+                    let (s, enabled) = &mut self.sources[i];
+                    ui.horizontal(|ui| {
+                        ui.checkbox(enabled, s.get_label());
+                        if ui.small_button("X").clicked() {
+                            remove_source = Some(i);
+                        }
+                    });
+                }
+                if let Some(i) = remove_source {
+                    self.sources.remove(i);
                 }
 
                 if ui.button("Add CalDAV").clicked() {
