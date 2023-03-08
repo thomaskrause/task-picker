@@ -156,6 +156,7 @@ impl eframe::App for TaskPickerApp {
 
             if ui.button("Refresh").clicked() {
                 self.task_manager.refresh();
+                self.messages.info("Refreshing task list in the background");
             }
 
             ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
