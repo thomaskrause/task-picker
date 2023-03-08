@@ -78,6 +78,7 @@ impl TaskPickerApp {
                         self.task_manager.add_caldav_source(new_task_source.clone());
                     }
                     self.new_task_source = None;
+                    self.trigger_refresh(true);
                 }
                 if ui.button("Discard").clicked() {
                     self.new_task_source = None;
@@ -190,7 +191,6 @@ impl eframe::App for TaskPickerApp {
 
         if self.new_task_source.is_some() {
             self.add_new_task(ctx);
-            self.trigger_refresh(true);
         } else if self
             .last_refreshed
             .elapsed()
