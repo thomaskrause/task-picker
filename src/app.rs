@@ -1,12 +1,17 @@
+use std::time::{Duration, Instant};
+
 use crate::{sources::CalDavSource, tasks::TaskManager};
 use egui::{ScrollArea, TextEdit, Ui};
-use egui_notify::Toasts;
+use egui_notify::{Toast, Toasts};
 use itertools::Itertools;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct TaskPickerApp {
     task_manager: TaskManager,
+    refresh_rate: Duration,
+    #[serde(skip)]
+    last_refreshed: Instant,
     #[serde(skip)]
     messages: Toasts,
     #[serde(skip)]
@@ -15,8 +20,12 @@ pub struct TaskPickerApp {
 
 impl Default for TaskPickerApp {
     fn default() -> Self {
+        let mut task_manager = TaskManager::default();
+        task_manager.refresh();
         Self {
             task_manager: TaskManager::default(),
+            refresh_rate: Duration::from_secs(15),
+            last_refreshed: Instant::now(),
             new_task_source: None,
             messages: Toasts::default(),
         }
@@ -100,6 +109,11 @@ impl TaskPickerApp {
             }
         });
     }
+
+    fn trigger_refresh(&mut self) {
+        self.last_refreshed = Instant::now();
+        self.task_manager.refresh();
+    }
 }
 
 impl eframe::App for TaskPickerApp {
@@ -111,7 +125,6 @@ impl eframe::App for TaskPickerApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-       
         #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -130,18 +143,25 @@ impl eframe::App for TaskPickerApp {
                 ui.heading("Sources");
 
                 let mut remove_source = None;
+                let mut refresh = false;
 
                 for i in 0..self.task_manager.sources.len() {
                     let (s, enabled) = &mut self.task_manager.sources[i];
                     ui.horizontal(|ui| {
-                        ui.checkbox(enabled, &s.calendar_name);
+                        if ui.checkbox(enabled, &s.calendar_name).changed() {
+                            refresh = true;
+                        }
                         if ui.small_button("X").clicked() {
                             remove_source = Some(i);
+                            refresh = true;
                         }
                     });
                 }
                 if let Some(i) = remove_source {
                     self.task_manager.sources.remove(i);
+                }
+                if refresh {
+                    self.trigger_refresh();
                 }
 
                 if ui.button("Add CalDAV").clicked() {
@@ -155,8 +175,10 @@ impl eframe::App for TaskPickerApp {
             ui.heading("Task Picker");
 
             if ui.button("Refresh").clicked() {
-                self.task_manager.refresh();
-                self.messages.info("Refreshing task list in the background");
+                self.trigger_refresh();
+                let mut msg = Toast::info("Refreshing task list in the background");
+                msg.set_duration(Some(Duration::from_secs(1)));
+                self.messages.add(msg);
             }
 
             ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
@@ -164,6 +186,14 @@ impl eframe::App for TaskPickerApp {
 
         if self.new_task_source.is_some() {
             self.add_new_task(ctx);
+            self.trigger_refresh();
+        } else if self
+            .last_refreshed
+            .elapsed()
+            .cmp(&self.refresh_rate)
+            .is_gt()
+        {
+            self.trigger_refresh();
         }
 
         if let Some(err) = &self.task_manager.get_and_clear_last_err() {

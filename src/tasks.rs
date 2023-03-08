@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -19,7 +16,6 @@ pub struct Task {
 pub struct TaskManager {
     tasks: Arc<Mutex<Vec<Task>>>,
     pub sources: Vec<(CalDavSource, bool)>,
-    pub refresh_rate: Duration,
     #[serde(skip)]
     last_connection_attempt: Option<std::time::Instant>,
     #[serde(skip)]
@@ -31,7 +27,6 @@ impl Default for TaskManager {
         Self {
             tasks: Default::default(),
             sources: Default::default(),
-            refresh_rate: Duration::from_secs(10),
             last_connection_attempt: Default::default(),
             last_error: Default::default(),
         }
