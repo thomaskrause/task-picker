@@ -1,5 +1,5 @@
 use crate::{sources::CalDavSource, TaskProvider, TaskSource};
-use egui::{Color32, ScrollArea, TextEdit, Stroke};
+use egui::{Color32, ScrollArea, Stroke, Style, TextEdit, Ui};
 use egui_notify::{Toast, Toasts};
 use itertools::Itertools;
 
@@ -76,6 +76,50 @@ impl TaskPickerApp {
             });
         });
     }
+
+    fn render_tasks(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
+        // Create a grid layout where each row can show up to 5 tasks
+        egui::Grid::new("task-grid").num_columns(5).show(ui, |ui| {
+            // Get all tasks for all active source
+            let mut task_counter = 0;
+            for (source, active) in &mut self.sources {
+                if *active {
+                    // Query for the task if this source
+                    match source.get_tasks() {
+                        Ok(tasks) => {
+                            for task in tasks {
+                                ui.group(|ui| {
+                                    ui.set_max_width(150.0);
+                                    ui.style_mut().wrap = Some(true);
+
+                                    ui.vertical(|ui| {
+                                        ui.heading(task.title);
+                                        let mut description = task.description.clone();
+                                        description.truncate(50);
+                                        ui.label(description);
+                                    });
+                                });
+                                task_counter += 1;
+                                if task_counter % 5 == 0 {
+                                    ui.end_row();
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            let message = e
+                                .to_string()
+                                .chars()
+                                .chunks(50)
+                                .into_iter()
+                                .map(|c| c.collect::<String>())
+                                .join("\n");
+                            self.messages.add(Toast::error(message));
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 impl eframe::App for TaskPickerApp {
@@ -134,36 +178,7 @@ impl eframe::App for TaskPickerApp {
                 }
             }
 
-            ScrollArea::vertical().show(ui, |ui| {
-                // Get all tasks for all active source
-                for (source, active) in &mut self.sources {
-                    if *active {
-                        // Query for the task if this source
-                        match source.get_tasks() {
-                            Ok(tasks) => {
-                                for task in tasks {
-                                    egui::Frame::none()
-                                    .stroke(Stroke::new(1.0, Color32::DARK_GRAY))
-                                        .show(ui, |ui| {
-                                            ui.heading(task.title);
-                                            ui.label(task.description);
-                                        });
-                                }
-                            }
-                            Err(e) => {
-                                let message = e
-                                    .to_string()
-                                    .chars()
-                                    .chunks(50)
-                                    .into_iter()
-                                    .map(|c| c.collect::<String>())
-                                    .join("\n");
-                                self.messages.add(Toast::error(message));
-                            }
-                        }
-                    }
-                }
-            });
+            ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
         });
 
         if self.new_task_source.is_some() {
