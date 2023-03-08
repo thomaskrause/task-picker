@@ -1,0 +1,64 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'task-picker'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=task-picker"
+                ],
+                "filter": {
+                    "name": "task-picker",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'task-picker'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=task-picker",
+                    "--package=task-picker"
+                ],
+                "filter": {
+                    "name": "task-picker",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'task-picker'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=task-picker",
+                    "--package=task-picker"
+                ],
+                "filter": {
+                    "name": "task-picker",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
