@@ -1,7 +1,8 @@
 use std::time::{Duration, Instant};
 
 use crate::{sources::CalDavSource, tasks::TaskManager};
-use egui::{Color32, ScrollArea, TextEdit, Ui, Vec2};
+use chrono::Utc;
+use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -125,7 +126,14 @@ impl TaskPickerApp {
                         });
                         ui.heading(task.title.as_str().truncate_ellipse(80));
                         if let Some(due) = &task.due {
-                            ui.label(format!("Due: {}", due.to_rfc2822()));
+                            let mut due_label = RichText::new(format!("Due: {}", due.to_rfc2822()));
+                            let days_to_finish = due.signed_duration_since(Utc::now()).num_days();
+                            if days_to_finish < 0 {
+                                due_label = due_label.color(Color32::RED)
+                            } else if days_to_finish < 1 {
+                                due_label = due_label.color(Color32::GOLD)
+                            };
+                            ui.label(due_label);
                         }
                         ui.label(task.description.as_str().truncate_ellipse(100));
                     });
