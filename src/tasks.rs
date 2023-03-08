@@ -23,7 +23,7 @@ pub struct TaskManager {
     #[serde(skip)]
     last_connection_attempt: Option<std::time::Instant>,
     #[serde(skip)]
-    pub last_error: Option<anyhow::Error>,
+    last_error: Arc<Mutex<Option<anyhow::Error>>>,
 }
 
 impl Default for TaskManager {
@@ -38,28 +38,41 @@ impl Default for TaskManager {
     }
 }
 
-impl TaskManager {
-    pub fn refresh(&mut self) {
-        if let Err(e) = self.try_refresh() {
-            self.last_error = Some(e);
-        } else {
-            self.last_error = None;
+fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
+    let mut result = Vec::default();
+
+    for (source, active) in sources {
+        if *active {
+            let new_tasks = source.query_tasks()?;
+            result.extend(new_tasks);
         }
     }
+    Ok(result)
+}
 
-    fn try_refresh(&mut self) -> Result<()> {
-        let mut result = Vec::default();
+impl TaskManager {
+    /// Refresh task list in the background
+    pub fn refresh(&mut self) {
+        let mut sources = self.sources.clone();
+        let last_error = self.last_error.clone();
+        let tasks = self.tasks.clone();
 
-        for (source, active) in &mut self.sources {
-            if *active {
-                let new_tasks = source.query_tasks()?;
-                result.extend(new_tasks);
+        rayon::spawn(move || match try_get_tasks(&mut sources) {
+            Ok(new_tasks) => {
+                {
+                    let mut tasks = tasks.lock().expect("Lock poisoning");
+                    *tasks = new_tasks;
+                }
+                {
+                    let mut last_error = last_error.lock().expect("Lock poisoning");
+                    *last_error = None;
+                }
             }
-        }
-        let mut tasks = self.tasks.lock().expect("Lock poisoning");
-        *tasks = result;
-
-        Ok(())
+            Err(e) => {
+                let mut last_error = last_error.lock().expect("Lock poisoning");
+                *last_error = Some(e);
+            }
+        });
     }
 
     pub fn tasks(&self) -> Vec<Task> {
@@ -69,5 +82,11 @@ impl TaskManager {
 
     pub fn add_caldav_source(&mut self, source: CalDavSource) {
         self.sources.push((source, true));
+    }
+
+    pub fn get_and_clear_last_err(&self) -> Option<anyhow::Error> {
+        let mut last_error = self.last_error.lock().expect("Lock poisoning");
+        let result = last_error.take();
+        result
     }
 }

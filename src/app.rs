@@ -165,7 +165,7 @@ impl eframe::App for TaskPickerApp {
             self.add_new_task(ctx);
         }
 
-        if let Some(err) = &self.task_manager.last_error {
+        if let Some(err) = &self.task_manager.get_and_clear_last_err() {
             let message = err
                 .to_string()
                 .chars()
@@ -175,6 +175,5 @@ impl eframe::App for TaskPickerApp {
                 .join("\n");
             self.messages.error(message);
         }
-        self.task_manager.last_error = None;
     }
 }
