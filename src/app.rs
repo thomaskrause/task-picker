@@ -145,7 +145,7 @@ impl eframe::App for TaskPickerApp {
             });
         });
 
-        egui::SidePanel::right("side_panel")
+        egui::SidePanel::left("side_panel")
             .resizable(false)
             .show(ctx, |ui| {
                 ui.heading("Sources");
