@@ -1,6 +1,9 @@
 use std::time::{Duration, Instant};
 
-use crate::{sources::CalDavSource, tasks::TaskManager};
+use crate::{
+    sources::{CalDavSource, GitHubSource},
+    tasks::TaskManager,
+};
 use chrono::Utc;
 use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2};
 use egui_notify::{Toast, Toasts};
@@ -18,7 +21,9 @@ pub struct TaskPickerApp {
     #[serde(skip)]
     messages: Toasts,
     #[serde(skip)]
-    new_task_source: Option<CalDavSource>,
+    new_caldav_source: Option<CalDavSource>,
+    #[serde(skip)]
+    new_github_source: Option<GitHubSource>,
 }
 
 impl Default for TaskPickerApp {
@@ -30,7 +35,8 @@ impl Default for TaskPickerApp {
             selected_task: None,
             refresh_rate: Duration::from_secs(15),
             last_refreshed: Instant::now(),
-            new_task_source: None,
+            new_caldav_source: None,
+            new_github_source: None,
             messages: Toasts::default(),
         }
     }
@@ -53,9 +59,9 @@ impl TaskPickerApp {
 }
 
 impl TaskPickerApp {
-    fn add_new_task_source(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Add Task Source").show(ctx, |ui| {
-            if let Some(new_task_source) = &mut self.new_task_source {
+    fn add_caldav_source(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Add CalDAV source").show(ctx, |ui| {
+            if let Some(new_task_source) = &mut self.new_caldav_source {
                 ui.horizontal(|ui| {
                     ui.label("Calendar Name");
                     ui.text_edit_singleline(&mut new_task_source.calendar_name);
@@ -77,14 +83,38 @@ impl TaskPickerApp {
 
             ui.horizontal(|ui| {
                 if ui.button("Save").clicked() {
-                    if let Some(new_task_source) = &self.new_task_source {
+                    if let Some(new_task_source) = &self.new_caldav_source {
                         self.task_manager.add_caldav_source(new_task_source.clone());
                     }
-                    self.new_task_source = None;
+                    self.new_caldav_source = None;
                     self.trigger_refresh(true);
                 }
                 if ui.button("Discard").clicked() {
-                    self.new_task_source = None;
+                    self.new_caldav_source = None;
+                }
+            });
+        });
+    }
+
+    fn add_github_source(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Add GitHub Source").show(ctx, |ui| {
+            if let Some(new_source) = &mut self.new_github_source {
+                ui.horizontal(|ui| {
+                    ui.label("GitHub API Token");
+                    ui.text_edit_singleline(&mut new_source.token);
+                });
+            }
+
+            ui.horizontal(|ui| {
+                if ui.button("Save").clicked() {
+                    if let Some(source) = &self.new_github_source {
+                        self.task_manager.set_github_source(source.clone());
+                    }
+                    self.new_github_source = None;
+                    self.trigger_refresh(true);
+                }
+                if ui.button("Discard").clicked() {
+                    self.new_github_source = None;
                 }
             });
         });
@@ -185,30 +215,54 @@ impl eframe::App for TaskPickerApp {
             .show(ctx, |ui| {
                 ui.heading("Sources");
 
-                let mut remove_source = None;
+                let mut remove_caldav = None;
+                let mut remove_github = false;
                 let mut refresh = false;
 
-                for i in 0..self.task_manager.sources.len() {
-                    let (s, enabled) = &mut self.task_manager.sources[i];
+                for i in 0..self.task_manager.caldav_sources.len() {
+                    let (s, enabled) = &mut self.task_manager.caldav_sources[i];
                     ui.horizontal(|ui| {
                         if ui.checkbox(enabled, &s.calendar_name).changed() {
                             refresh = true;
                         }
                         if ui.small_button("X").clicked() {
-                            remove_source = Some(i);
+                            remove_caldav = Some(i);
                             refresh = true;
                         }
                     });
                 }
-                if let Some(i) = remove_source {
-                    self.task_manager.sources.remove(i);
+                if let Some((_gh_source, enabled)) = &mut self.task_manager.github_source {
+                    ui.horizontal(|ui| {
+                        if ui.checkbox(enabled, "GitHub").changed() {
+                            refresh = true;
+                        }
+                        if ui.small_button("X").clicked() {
+                            remove_github = true;
+                            refresh = true;
+                        }
+                    });
                 }
+                if let Some(i) = remove_caldav {
+                    self.task_manager.caldav_sources.remove(i);
+                }
+                if remove_github {
+                    self.task_manager.github_source = None;
+                }
+
                 if refresh {
                     self.trigger_refresh(true);
                 }
 
                 if ui.button("Add CalDAV").clicked() {
-                    self.new_task_source = Some(CalDavSource::default());
+                    self.new_caldav_source = Some(CalDavSource::default());
+                }
+                if ui.button("Add GitHub").clicked() {
+                    // Re-use the existing configuration or create a new one
+                    if let Some((source, _)) = &self.task_manager.github_source {
+                        self.new_github_source = Some(source.clone());
+                    } else {
+                        self.new_github_source = Some(GitHubSource::default());
+                    }
                 }
             });
 
@@ -224,8 +278,11 @@ impl eframe::App for TaskPickerApp {
             ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
         });
 
-        if self.new_task_source.is_some() {
-            self.add_new_task_source(ctx);
+        if self.new_github_source.is_some() {
+            self.add_github_source(ctx);
+        }
+        else if self.new_caldav_source.is_some() {
+            self.add_caldav_source(ctx);
         } else if self
             .last_refreshed
             .elapsed()

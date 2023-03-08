@@ -7,12 +7,6 @@ use url::Url;
 
 use crate::tasks::Task;
 
-#[derive(Serialize, Deserialize)]
-#[serde()]
-pub enum TaskSource {
-    CalDav(CalDavSource),
-}
-
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct CalDavSource {
@@ -87,5 +81,36 @@ impl CalDavSource {
             }
         }
         Ok(result)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(default)]
+pub struct GitHubSource {
+    #[serde(skip)]
+    agent: ureq::Agent,
+    pub token: String,
+}
+
+impl Default for GitHubSource {
+    fn default() -> Self {
+        Self {
+            agent: Agent::new(),
+            token: Default::default(),
+        }
+    }
+}
+impl GitHubSource {
+    pub fn query_tasks(&mut self) -> Result<Vec<Task>> {
+        let response = self
+            .agent
+            .get("https://api.github.com/issues")
+            .set("Authorization", &format!("Beaer: {}", &self.token))
+            .set("X-GitHub-Api-Version", "2022-11-28")
+            .set("Accept", "application/vnd.github+json")
+            .call()?;
+        let body = response.into_string()?;
+        dbg!(body);
+        Ok(vec![])
     }
 }

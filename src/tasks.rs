@@ -7,7 +7,7 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::sources::CalDavSource;
+use crate::sources::{CalDavSource, GitHubSource};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
@@ -20,7 +20,8 @@ pub struct Task {
 #[serde(default)]
 pub struct TaskManager {
     tasks: Arc<Mutex<Vec<Task>>>,
-    pub sources: Vec<(CalDavSource, bool)>,
+    pub caldav_sources: Vec<(CalDavSource, bool)>,
+    pub github_source: Option<(GitHubSource, bool)>,
     #[serde(skip)]
     last_connection_attempt: Option<std::time::Instant>,
     #[serde(skip)]
@@ -58,7 +59,7 @@ fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
 impl TaskManager {
     /// Refresh task list in the background
     pub fn refresh(&mut self) {
-        let mut sources = self.sources.clone();
+        let mut sources = self.caldav_sources.clone();
         let last_error = self.last_error.clone();
         let tasks = self.tasks.clone();
 
@@ -92,7 +93,11 @@ impl TaskManager {
     }
 
     pub fn add_caldav_source(&mut self, source: CalDavSource) {
-        self.sources.push((source, true));
+        self.caldav_sources.push((source, true));
+    }
+
+    pub fn set_github_source(&mut self, source: GitHubSource) {
+        self.github_source = Some((source, true));
     }
 
     pub fn get_and_clear_last_err(&self) -> Option<anyhow::Error> {
