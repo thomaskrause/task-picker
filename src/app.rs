@@ -1,12 +1,12 @@
-use crate::{sources::CalDavSource, TaskProvider, TaskSource};
-use egui::{Color32, ScrollArea, Stroke, Style, TextEdit, Ui, Label};
-use egui_notify::{Toast, Toasts};
+use crate::{sources::CalDavSource, tasks::TaskManager};
+use egui::{ScrollArea, TextEdit, Ui};
+use egui_notify::Toasts;
 use itertools::Itertools;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct TaskPickerApp {
-    sources: Vec<(TaskSource, bool)>,
+    task_manager: TaskManager,
     #[serde(skip)]
     messages: Toasts,
     #[serde(skip)]
@@ -16,8 +16,8 @@ pub struct TaskPickerApp {
 impl Default for TaskPickerApp {
     fn default() -> Self {
         Self {
+            task_manager: TaskManager::default(),
             new_task_source: None,
-            sources: Vec::default(),
             messages: Toasts::default(),
         }
     }
@@ -65,8 +65,7 @@ impl TaskPickerApp {
             ui.horizontal(|ui| {
                 if ui.button("Save").clicked() {
                     if let Some(new_task_source) = &self.new_task_source {
-                        self.sources
-                            .push((TaskSource::CalDav(new_task_source.clone()), true));
+                        self.task_manager.add_caldav_source(new_task_source.clone());
                     }
                     self.new_task_source = None;
                 }
@@ -82,40 +81,21 @@ impl TaskPickerApp {
         egui::Grid::new("task-grid").num_columns(5).show(ui, |ui| {
             // Get all tasks for all active source
             let mut task_counter = 0;
-            for (source, active) in &mut self.sources {
-                if *active {
-                    // Query for the task if this source
-                    match source.get_tasks() {
-                        Ok(tasks) => {
-                            for task in tasks {
-                                ui.group(|ui| {
-                                    ui.set_max_width(150.0);
-                                    ui.style_mut().wrap = Some(true);
+            for task in self.task_manager.tasks() {
+                ui.group(|ui| {
+                    ui.set_max_width(150.0);
+                    ui.style_mut().wrap = Some(true);
 
-                                    ui.vertical(|ui| {
-                                        ui.heading(task.title);
-                                        let mut description = task.description.clone();
-                                        description.truncate(50);
-                                        ui.label(description.replace("\\\\n", "\n"));
-                                    });
-                                });
-                                task_counter += 1;
-                                if task_counter % 5 == 0 {
-                                    ui.end_row();
-                                }
-                            }
-                        }
-                        Err(e) => {
-                            let message = e
-                                .to_string()
-                                .chars()
-                                .chunks(50)
-                                .into_iter()
-                                .map(|c| c.collect::<String>())
-                                .join("\n");
-                            self.messages.add(Toast::error(message));
-                        }
-                    }
+                    ui.vertical(|ui| {
+                        ui.heading(&task.title);
+                        let mut description = task.description.clone();
+                        description.truncate(50);
+                        ui.label(description.replace("\\\\n", "\n"));
+                    });
+                });
+                task_counter += 1;
+                if task_counter % 5 == 0 {
+                    ui.end_row();
                 }
             }
         });
@@ -131,6 +111,7 @@ impl eframe::App for TaskPickerApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+       
         #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
@@ -149,17 +130,18 @@ impl eframe::App for TaskPickerApp {
                 ui.heading("Sources");
 
                 let mut remove_source = None;
-                for i in 0..self.sources.len() {
-                    let (s, enabled) = &mut self.sources[i];
+
+                for i in 0..self.task_manager.sources.len() {
+                    let (s, enabled) = &mut self.task_manager.sources[i];
                     ui.horizontal(|ui| {
-                        ui.checkbox(enabled, s.get_label());
+                        ui.checkbox(enabled, &s.calendar_name);
                         if ui.small_button("X").clicked() {
                             remove_source = Some(i);
                         }
                     });
                 }
                 if let Some(i) = remove_source {
-                    self.sources.remove(i);
+                    self.task_manager.sources.remove(i);
                 }
 
                 if ui.button("Add CalDAV").clicked() {
@@ -173,9 +155,7 @@ impl eframe::App for TaskPickerApp {
             ui.heading("Task Picker");
 
             if ui.button("Refresh").clicked() {
-                for (t, _) in &mut self.sources {
-                    t.reset_cache();
-                }
+                self.task_manager.refresh();
             }
 
             ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
@@ -184,5 +164,17 @@ impl eframe::App for TaskPickerApp {
         if self.new_task_source.is_some() {
             self.add_new_task(ctx);
         }
+
+        if let Some(err) = &self.task_manager.last_error {
+            let message = err
+                .to_string()
+                .chars()
+                .chunks(50)
+                .into_iter()
+                .map(|c| c.collect::<String>())
+                .join("\n");
+            self.messages.error(message);
+        }
+        self.task_manager.last_error = None;
     }
 }
