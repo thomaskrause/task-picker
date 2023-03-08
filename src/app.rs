@@ -4,7 +4,7 @@ use crate::{sources::CalDavSource, TaskProvider, TaskSource};
 #[serde(default)]
 pub struct TaskPickerApp {
     new_task_source: Option<CalDavSource>,
-    sources: Vec<TaskSource>,
+    sources: Vec<(TaskSource, bool)>,
 }
 
 impl Default for TaskPickerApp {
@@ -55,16 +55,18 @@ impl TaskPickerApp {
                 });
             }
 
-            if ui.button("Save").clicked() {
-                if let Some(new_task_source) = &self.new_task_source {
-                    self.sources
-                        .push(TaskSource::CalDav(new_task_source.clone()));
+            ui.horizontal(|ui| {
+                if ui.button("Save").clicked() {
+                    if let Some(new_task_source) = &self.new_task_source {
+                        self.sources
+                            .push((TaskSource::CalDav(new_task_source.clone()), true));
+                    }
+                    self.new_task_source = None;
                 }
-                self.new_task_source = None;
-            }
-            if ui.button("Discard").clicked() {
-                self.new_task_source = None;
-            }
+                if ui.button("Discard").clicked() {
+                    self.new_task_source = None;
+                }
+            });
         });
     }
 }
@@ -95,11 +97,11 @@ impl eframe::App for TaskPickerApp {
             .show(ctx, |ui| {
                 ui.heading("Task Sources");
 
-                for s in &self.sources {
-                    ui.label(s.get_label());
+                for (s, enabled) in &mut self.sources {
+                    ui.checkbox(enabled, s.get_label());
                 }
 
-                if ui.button("Add").clicked() {
+                if ui.button("Add CalDAV").clicked() {
                     self.new_task_source = Some(CalDavSource::default());
                 }
             });
