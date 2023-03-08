@@ -1,7 +1,7 @@
-use egui::TextEdit;
+use crate::{sources::CalDavSource, TaskProvider, TaskSource};
+use egui::{Color32, ScrollArea, TextEdit, Stroke};
 use egui_notify::{Toast, Toasts};
 use itertools::Itertools;
-use crate::{sources::CalDavSource, TaskProvider, TaskSource};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -44,8 +44,8 @@ impl TaskPickerApp {
         egui::Window::new("Add Task Source").show(ctx, |ui| {
             if let Some(new_task_source) = &mut self.new_task_source {
                 ui.horizontal(|ui| {
-                    ui.label("Label");
-                    ui.text_edit_singleline(&mut new_task_source.label);
+                    ui.label("Calendar Name");
+                    ui.text_edit_singleline(&mut new_task_source.calendar_name);
                 });
                 ui.horizontal(|ui| {
                     ui.label("Base Url");
@@ -134,23 +134,36 @@ impl eframe::App for TaskPickerApp {
                 }
             }
 
-            // Get all tasks for all active source
-            for (source, active) in &mut self.sources {
-                if *active {
-                    // Query for the task if this source
-                    match source.get_tasks() {
-                        Ok(tasks) => {
-                            for task in tasks {
-                                ui.label(task.title);
+            ScrollArea::vertical().show(ui, |ui| {
+                // Get all tasks for all active source
+                for (source, active) in &mut self.sources {
+                    if *active {
+                        // Query for the task if this source
+                        match source.get_tasks() {
+                            Ok(tasks) => {
+                                for task in tasks {
+                                    egui::Frame::none()
+                                    .stroke(Stroke::new(1.0, Color32::DARK_GRAY))
+                                        .show(ui, |ui| {
+                                            ui.heading(task.title);
+                                            ui.label(task.description);
+                                        });
+                                }
                             }
-                        }
-                        Err(e) => {
-                            let message = e.to_string().chars().chunks(50).into_iter().map(|c| c.collect::<String>()).join("\n");
-                            self.messages.add(Toast::error(message));
+                            Err(e) => {
+                                let message = e
+                                    .to_string()
+                                    .chars()
+                                    .chunks(50)
+                                    .into_iter()
+                                    .map(|c| c.collect::<String>())
+                                    .join("\n");
+                                self.messages.add(Toast::error(message));
+                            }
                         }
                     }
                 }
-            }
+            });
         });
 
         if self.new_task_source.is_some() {

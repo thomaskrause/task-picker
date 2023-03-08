@@ -1,4 +1,5 @@
 use anyhow::Result;
+use eframe::epaint::ahash::HashMap;
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
 use url::Url;
@@ -10,7 +11,7 @@ use crate::{Task, TaskProvider};
 pub struct CalDavSource {
     #[serde(skip)]
     agent: ureq::Agent,
-    pub label: String,
+    pub calendar_name: String,
     pub username: String,
     pub password: String,
     pub base_url: String,
@@ -24,7 +25,7 @@ impl Default for CalDavSource {
     fn default() -> Self {
         Self {
             agent: Agent::new(),
-            label: String::default(),
+            calendar_name: String::default(),
             username: String::default(),
             password: String::default(),
             base_url: String::default(),
@@ -36,7 +37,7 @@ impl Default for CalDavSource {
 
 impl TaskProvider for CalDavSource {
     fn get_label(&self) -> &str {
-        self.label.as_str()
+        self.calendar_name.as_str()
     }
 
     fn get_tasks(&mut self) -> Result<Vec<Task>> {
@@ -62,17 +63,30 @@ impl TaskProvider for CalDavSource {
                 &self.password,
                 &base_url,
             )?;
-            let unknown_string = String::from("UNKNOWN");
             let mut result = Vec::default();
             for c in calendars {
-                let (todos, _errors) =
-                    minicaldav::get_todos(self.agent.clone(), &self.username, &self.password, &c)?;
-                for t in todos {
-                    let title = t.get("title").unwrap_or(&unknown_string);
-                    let task = Task {
-                        title: title.clone(),
-                    };
-                    result.push(task);
+                if c.name().as_str() == self.calendar_name {
+                    let (todos, _errors) = minicaldav::get_todos(
+                        self.agent.clone(),
+                        &self.username,
+                        &self.password,
+                        &c,
+                    )?;
+                    for t in todos {
+                        let props: HashMap<String, String> = t
+                            .properties_todo()
+                            .into_iter()
+                            .map(|(k, v)| (k.to_string(), v.to_string()))
+                            .collect();
+                        if let Some(title) = props.get("SUMMARY") {
+                            let description : String = props.get("DESCRIPTION").map(|s| s.to_string()).unwrap_or_default();
+                            let task = Task {
+                                title: title.clone(),
+                                description,
+                            };
+                            result.push(task);
+                        }
+                    }
                 }
             }
             self.cached_tasks = result.clone();

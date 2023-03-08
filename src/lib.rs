@@ -10,6 +10,7 @@ use sources::CalDavSource;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Task {
     pub title: String,
+    pub description: String,
 }
 
 
