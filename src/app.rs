@@ -146,9 +146,7 @@ impl eframe::App for TaskPickerApp {
                         }
                         Err(e) => {
                             let message = e.to_string().chars().chunks(50).into_iter().map(|c| c.collect::<String>()).join("\n");
-                            let mut toast = Toast::error(message);
-                            toast.set_closable(true);
-                            self.messages.add(toast);
+                            self.messages.add(Toast::error(message));
                         }
                     }
                 }
