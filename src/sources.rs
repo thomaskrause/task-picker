@@ -1,4 +1,3 @@
-
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -6,20 +5,22 @@ use url::Url;
 
 use crate::{Task, TaskProvider};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct CalDavSource {
     #[serde(skip)]
     agent: ureq::Agent,
-    username: String,
-    password: String,
-    base_url: String,
+    pub label: String,
+    pub username: String,
+    pub password: String,
+    pub base_url: String,
 }
 
 impl Default for CalDavSource {
     fn default() -> Self {
         Self {
             agent: Agent::new(),
+            label: String::default(),
             username: String::default(),
             password: String::default(),
             base_url: String::default(),
@@ -28,6 +29,10 @@ impl Default for CalDavSource {
 }
 
 impl TaskProvider for CalDavSource {
+    fn get_label(&self) -> &str {
+        self.label.as_str()
+    }
+
     fn get_tasks(&self) -> Result<Vec<Task>> {
         let base_url = Url::parse(&self.base_url)?;
         let calendars = minicaldav::get_calendars(

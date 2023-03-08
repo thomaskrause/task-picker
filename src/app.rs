@@ -1,16 +1,16 @@
-use crate::TaskSource;
+use crate::{sources::CalDavSource, TaskProvider, TaskSource};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct TaskPickerApp {
-    add_task_source: bool,
+    new_task_source: Option<CalDavSource>,
     sources: Vec<TaskSource>,
 }
 
 impl Default for TaskPickerApp {
     fn default() -> Self {
         Self {
-            add_task_source: false,
+            new_task_source: None,
             sources: Vec::default(),
         }
     }
@@ -29,6 +29,43 @@ impl TaskPickerApp {
         }
 
         Default::default()
+    }
+}
+
+impl TaskPickerApp {
+    fn add_new_task(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Add Task Source").show(ctx, |ui| {
+            if let Some(new_task_source) = &mut self.new_task_source {
+                ui.horizontal(|ui| {
+                    ui.label("Label");
+                    ui.text_edit_singleline(&mut new_task_source.label);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Base Url");
+                    ui.text_edit_singleline(&mut new_task_source.base_url);
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("User Name");
+                    ui.text_edit_singleline(&mut new_task_source.username);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Password");
+                    ui.text_edit_singleline(&mut new_task_source.password);
+                });
+            }
+
+            if ui.button("Save").clicked() {
+                if let Some(new_task_source) = &self.new_task_source {
+                    self.sources
+                        .push(TaskSource::CalDav(new_task_source.clone()));
+                }
+                self.new_task_source = None;
+            }
+            if ui.button("Discard").clicked() {
+                self.new_task_source = None;
+            }
+        });
     }
 }
 
@@ -58,8 +95,12 @@ impl eframe::App for TaskPickerApp {
             .show(ctx, |ui| {
                 ui.heading("Task Sources");
 
+                for s in &self.sources {
+                    ui.label(s.get_label());
+                }
+
                 if ui.button("Add").clicked() {
-                    self.add_task_source = true;
+                    self.new_task_source = Some(CalDavSource::default());
                 }
             });
 
@@ -67,12 +108,8 @@ impl eframe::App for TaskPickerApp {
             ui.heading("Task Picker");
         });
 
-        if self.add_task_source {
-            egui::Window::new("Add Task Source")
-                .open(&mut self.add_task_source)
-                .show(ctx, |ui| {
-                    ui.label("Ups");
-                });
+        if self.new_task_source.is_some() {
+            self.add_new_task(ctx);
         }
     }
 }

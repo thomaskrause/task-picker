@@ -20,6 +20,7 @@ pub enum TaskSource {
 }
 
 trait TaskProvider {
+    fn get_label(&self) -> &str;
     fn get_tasks(&self) -> anyhow::Result<Vec<Task>>;
 }
 
@@ -27,6 +28,12 @@ impl TaskProvider for TaskSource {
     fn get_tasks(&self) -> anyhow::Result<Vec<Task>> {
         match self {
             TaskSource::CalDav(c) => c.get_tasks(),
+        }
+    }
+
+    fn get_label(&self) -> &str {
+        match self {
+            TaskSource::CalDav(c) => c.get_label(),
         }
     }
 }
