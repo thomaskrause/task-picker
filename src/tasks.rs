@@ -28,12 +28,22 @@ pub struct TaskManager {
     last_error: Arc<Mutex<Option<anyhow::Error>>>,
 }
 
-fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
+fn try_get_tasks(
+    sources: &mut Vec<(CalDavSource, bool)>,
+    gh_source: Option<&mut (GitHubSource, bool)>,
+) -> Result<Vec<Task>> {
     let mut result = Vec::default();
 
     for (source, active) in sources {
         if *active {
             let new_tasks = source.query_tasks()?;
+            result.extend(new_tasks);
+        }
+    }
+
+    if let Some((gh_source, active)) = gh_source {
+        if *active {
+            let new_tasks = gh_source.query_tasks()?;
             result.extend(new_tasks);
         }
     }
@@ -59,32 +69,35 @@ fn try_get_tasks(sources: &mut Vec<(CalDavSource, bool)>) -> Result<Vec<Task>> {
 impl TaskManager {
     /// Refresh task list in the background
     pub fn refresh(&mut self) {
-        let mut sources = self.caldav_sources.clone();
+        let mut caldav_sources = self.caldav_sources.clone();
+        let mut gh_source = self.github_source.clone();
         let last_error = self.last_error.clone();
         let tasks = self.tasks.clone();
 
-        rayon::spawn(move || match try_get_tasks(&mut sources) {
-            Ok(new_tasks) => {
-                {
-                    let mut tasks = tasks.lock().expect("Lock poisoning");
-                    *tasks = new_tasks;
+        rayon::spawn(
+            move || match try_get_tasks(&mut caldav_sources, gh_source.as_mut()) {
+                Ok(new_tasks) => {
+                    {
+                        let mut tasks = tasks.lock().expect("Lock poisoning");
+                        *tasks = new_tasks;
+                    }
+                    {
+                        let mut last_error = last_error.lock().expect("Lock poisoning");
+                        *last_error = None;
+                    }
                 }
-                {
-                    let mut last_error = last_error.lock().expect("Lock poisoning");
-                    *last_error = None;
+                Err(e) => {
+                    {
+                        let mut tasks = tasks.lock().expect("Lock poisoning");
+                        tasks.clear();
+                    }
+                    {
+                        let mut last_error = last_error.lock().expect("Lock poisoning");
+                        *last_error = Some(e);
+                    }
                 }
-            }
-            Err(e) => {
-                {
-                    let mut tasks = tasks.lock().expect("Lock poisoning");
-                    tasks.clear();
-                }
-                {
-                    let mut last_error = last_error.lock().expect("Lock poisoning");
-                    *last_error = Some(e);
-                }
-            }
-        });
+            },
+        );
     }
 
     pub fn tasks(&self) -> Vec<Task> {

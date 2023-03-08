@@ -25,6 +25,7 @@ url = "2"
 chrono = {version = "0.4.23", features = ["serde"]}
 ellipse = {version = "0.2.0"}
 serde = {version = "1", features = ["derive"]}
+json = "0.12.4"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
