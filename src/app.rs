@@ -157,7 +157,7 @@ impl TaskPickerApp {
                         ui.heading(task.title.as_str().truncate_ellipse(80));
 
                         ui.label(task.project.as_str());
-                        
+
                         if let Some(due) = &task.due {
                             let mut due_label = RichText::new(format!("Due: {}", due.to_rfc2822()));
                             let days_to_finish = due.signed_duration_since(Utc::now()).num_days();
@@ -280,12 +280,13 @@ impl eframe::App for TaskPickerApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             self.messages.show(ctx);
 
-            ui.heading("Task Picker");
+            ui.horizontal(|ui| {
+                ui.heading("Tasks");
 
-            if ui.button("Refresh").clicked() {
-                self.trigger_refresh(true);
-            }
-
+                if ui.button("Refresh").clicked() {
+                    self.trigger_refresh(true);
+                }
+            });
             ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
         });
 
