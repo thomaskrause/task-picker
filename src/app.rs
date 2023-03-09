@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crate::{
-    sources::{CalDavSource, GitHubSource, TaskSource},
+    sources::{CalDavSource, GitHubSource, TaskSource, GitLabSource},
     tasks::TaskManager,
 };
 use chrono::{Local, TimeZone, Utc};
@@ -98,8 +98,19 @@ impl TaskPickerApp {
                             ui.text_edit_singleline(&mut new_source.token);
                         });
                     }
-                    TaskSource::GitLab(_) => {
-                        ui.label("Not implemented yet");
+                    TaskSource::GitLab(new_source) => {
+                        ui.horizontal(|ui| {
+                            ui.label("Name");
+                            ui.text_edit_singleline(&mut new_source.name);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Server URL");
+                            ui.text_edit_singleline(&mut new_source.server_url);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("API Token");
+                            ui.text_edit_singleline(&mut new_source.token);
+                        });
                     }
                 }
                 ui.horizontal(|ui| {
@@ -272,6 +283,9 @@ impl eframe::App for TaskPickerApp {
                 }
                 if ui.button("Add GitHub").clicked() {
                     self.new_source = Some(TaskSource::GitHub(GitHubSource::default()));
+                }
+                if ui.button("Add GitLab").clicked() {
+                    self.new_source = Some(TaskSource::GitLab(GitLabSource::default()));
                 }
             });
 
