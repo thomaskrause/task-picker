@@ -30,6 +30,7 @@ log = "0.4.17"
 
 # native:
 tracing-subscriber = "0.3"
+image = "0.24.5"
 
 
 [profile.release]
