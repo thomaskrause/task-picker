@@ -73,6 +73,10 @@ impl CalDavSource {
                     };
                     if !completed && can_start {
                         if let Some(title) = props.get("SUMMARY") {
+                            let title = title
+                                .replace("\\\\", "\\")
+                                .replace("\\n", "\n")
+                                .replace("\\,", ",");
                             let description: String = props
                                 .get("DESCRIPTION")
                                 .map(|s| {
