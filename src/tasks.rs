@@ -23,8 +23,6 @@ pub struct TaskManager {
     tasks: Arc<Mutex<Vec<Task>>>,
     pub sources: Vec<(TaskSource, bool)>,
     #[serde(skip)]
-    last_connection_attempt: Option<std::time::Instant>,
-    #[serde(skip)]
     last_error: Arc<Mutex<Option<anyhow::Error>>>,
 }
 

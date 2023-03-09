@@ -29,11 +29,12 @@ impl Default for TaskPickerApp {
     fn default() -> Self {
         let mut task_manager = TaskManager::default();
         task_manager.refresh();
+        let refresh_rate = Duration::from_secs(15);
         Self {
             task_manager: TaskManager::default(),
             selected_task: None,
-            refresh_rate: Duration::from_secs(15),
-            last_refreshed: Instant::now(),
+            refresh_rate: refresh_rate,
+            last_refreshed: Instant::now() - refresh_rate,
             new_source: None,
             messages: Toasts::default(),
         }
