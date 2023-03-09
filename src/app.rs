@@ -15,7 +15,7 @@ use log::error;
 #[serde(default)]
 pub struct TaskPickerApp {
     task_manager: TaskManager,
-    selected_task: Option<usize>,
+    selected_task: Option<String>,
     refresh_rate: Duration,
     #[serde(skip)]
     last_refreshed: Instant,
@@ -153,7 +153,7 @@ impl TaskPickerApp {
                         .due
                         .filter(|d| Local.from_utc_datetime(d).cmp(&Local::now()).is_le())
                         .is_some();
-                    if Some(task_counter) == self.selected_task {
+                    if Some(task.get_id()) == self.selected_task {
                         group.fill = Color32::DARK_BLUE;
                     } else if overdue {
                         group.fill = Color32::DARK_RED;
@@ -166,19 +166,19 @@ impl TaskPickerApp {
 
                         ui.vertical(|ui| {
                             ui.vertical_centered_justified(|ui| {
-                                let already_selected = Some(task_counter) == self.selected_task;
+                                let already_selected = Some(task.get_id()) == self.selected_task;
                                 let caption = if already_selected {
                                     "Deselect"
                                 } else {
                                     "Select"
                                 };
                                 if ui.button(caption).clicked() {
-                                    if Some(task_counter) == self.selected_task {
+                                    if Some(task.get_id()) == self.selected_task {
                                         // Already selected, deselect
                                         self.selected_task = None;
                                     } else {
                                         // Select this task
-                                        self.selected_task = Some(task_counter);
+                                        self.selected_task = Some(task.get_id());
                                     }
                                 }
                             });

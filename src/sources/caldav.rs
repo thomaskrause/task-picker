@@ -97,12 +97,14 @@ impl CalDavSource {
                                     )
                                 })
                                 .transpose()?;
+
                             let task = Task {
                                 project: c.name().clone(),
                                 title: title.clone(),
                                 description,
                                 due,
                                 created,
+                                id: props.get("UID").cloned(),
                             };
                             result.push(task);
                         }

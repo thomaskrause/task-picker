@@ -16,6 +16,17 @@ pub struct Task {
     pub description: String,
     pub due: Option<NaiveDateTime>,
     pub created: Option<NaiveDateTime>,
+    pub id: Option<String>,
+}
+
+impl Task {
+    pub fn get_id(&self) -> String {
+        // Use provided ID or fall back to an auto-generated one
+        self.id
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| format!("{}/{}", self.project, self.title))
+    }
 }
 
 #[derive(Serialize, Deserialize, Default)]

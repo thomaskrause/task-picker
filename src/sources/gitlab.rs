@@ -106,6 +106,7 @@ impl GitLabSource {
                         description: url.to_string(),
                         due,
                         created: created.map(|d| d.naive_local()),
+                        id: Some(url.to_string()),
                     };
                     result.push(task);
                 }
