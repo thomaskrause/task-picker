@@ -33,7 +33,7 @@ impl Default for CalDavSource {
 }
 
 impl CalDavSource {
-    pub fn query_tasks(&mut self) -> Result<Vec<Task>> {
+    pub fn query_tasks(&self) -> Result<Vec<Task>> {
         let base_url = Url::parse(&self.base_url)?;
         let calendars = minicaldav::get_calendars(
             self.agent.clone(),

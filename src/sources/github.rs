@@ -26,7 +26,7 @@ impl Default for GitHubSource {
     }
 }
 impl GitHubSource {
-    pub fn query_tasks(&mut self) -> Result<Vec<Task>> {
+    pub fn query_tasks(&self) -> Result<Vec<Task>> {
         let mut result = Vec::default();
 
         let request = self

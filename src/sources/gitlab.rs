@@ -29,6 +29,26 @@ impl Default for GitLabSource {
 }
 
 impl GitLabSource {
+    fn get_project_name(&self, project_id: usize) -> Result<Option<String>> {
+        let request = self
+            .agent
+            .get(&format!("{}/projects/{}", self.server_url, project_id))
+            .set("PRIVATE-TOKEN", &self.token);
+        let response = request.call()?;
+        let body = response.into_string()?;
+        let project = json::parse(&body)?;
+        if let JsonValue::Object(project) = project {
+            let project_name = project
+                .get("name_with_namespace")
+                .context("Missing field 'name_with_namespace' on project JSON")?
+                .as_str()
+                .context("'name_with_namespace' is not a string")?;
+            Ok(Some(project_name.to_string()))
+        } else {
+            Ok(None)
+        }
+    }
+
     fn extract_issues_for_page(&self, page: usize) -> Result<Vec<Task>> {
         let mut result = Vec::default();
         let request = self
@@ -45,14 +65,14 @@ impl GitLabSource {
         if let JsonValue::Array(assigned_issues) = assigned_issues {
             for issue in assigned_issues {
                 if let JsonValue::Object(issue) = issue {
-                    let project = if let JsonValue::String(project_id) = issue
+                    let project_id = issue
                         .get("project_id")
                         .context("Missing 'project_id' field for issue")?
-                    {
-                        project_id
-                    } else {
-                        "GitLab"
-                    };
+                        .as_usize()
+                        .context("'project_id' is not a number")?;
+                    let project = self
+                        .get_project_name(project_id)?
+                        .unwrap_or_else(|| self.name.clone());
 
                     let title = issue
                         .get("title")
@@ -65,7 +85,7 @@ impl GitLabSource {
                         .as_str()
                         .unwrap_or_default();
                     let task = Task {
-                        project: project.to_string(),
+                        project,
                         title: title.to_string(),
                         description: url.to_string(),
                         due: None,
