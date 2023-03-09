@@ -121,80 +121,91 @@ impl TaskPickerApp {
     }
 
     fn render_tasks(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        // Create a grid layout where each row can show up to 5 tasks
-        egui::Grid::new("task-grid").num_columns(4).show(ui, |ui| {
-            // Get all tasks for all active source
-            let mut task_counter = 0;
-            for task in self.task_manager.tasks() {
-                let mut group = egui::Frame::group(ui.style());
-                let overdue = task
-                    .due
-                    .filter(|d| Local.from_utc_datetime(d).cmp(&Local::now()).is_le())
-                    .is_some();
-                if Some(task_counter) == self.selected_task {
-                    group.fill = Color32::DARK_BLUE;
-                } else if overdue {
-                    group.fill = Color32::DARK_RED;
-                }
-                group.show(ui, |ui| {
-                    let size = Vec2::new(220.0, 250.0);
-                    ui.set_min_size(size);
-                    ui.set_max_size(size);
-                    ui.style_mut().wrap = Some(true);
+        let box_width = 220.0;
+        let box_width_with_spacing = box_width + (2.0 * ui.style().spacing.item_spacing.x);
+        let ratio = (ui.available_width()-5.0) / (box_width_with_spacing);
+        let columns = (ratio.floor() as usize).max(1);
 
-                    ui.vertical(|ui| {
-                        ui.vertical_centered_justified(|ui| {
-                            let already_selected = Some(task_counter) == self.selected_task;
-                            let caption = if already_selected {
-                                "Deselect"
-                            } else {
-                                "Select"
-                            };
-                            if ui.button(caption).clicked() {
-                                if Some(task_counter) == self.selected_task {
-                                    // Already selected, deselect
-                                    self.selected_task = None;
+        // Create a grid layout where each row can show up to 5 tasks
+        egui::Grid::new("task-grid")
+            .num_columns(columns)
+            .show(ui, |ui| {
+                // Get all tasks for all active source
+                let mut task_counter = 0;
+                for task in self.task_manager.tasks() {
+                    let mut group = egui::Frame::group(ui.style());
+                    let overdue = task
+                        .due
+                        .filter(|d| Local.from_utc_datetime(d).cmp(&Local::now()).is_le())
+                        .is_some();
+                    if Some(task_counter) == self.selected_task {
+                        group.fill = Color32::DARK_BLUE;
+                    } else if overdue {
+                        group.fill = Color32::DARK_RED;
+                    }
+                    group.show(ui, |ui| {
+                        let size = Vec2::new(box_width, 250.0);
+                        ui.set_min_size(size);
+                        ui.set_max_size(size);
+                        ui.style_mut().wrap = Some(true);
+
+                        ui.vertical(|ui| {
+                            ui.vertical_centered_justified(|ui| {
+                                let already_selected = Some(task_counter) == self.selected_task;
+                                let caption = if already_selected {
+                                    "Deselect"
                                 } else {
-                                    // Select this task
-                                    self.selected_task = Some(task_counter);
+                                    "Select"
+                                };
+                                if ui.button(caption).clicked() {
+                                    if Some(task_counter) == self.selected_task {
+                                        // Already selected, deselect
+                                        self.selected_task = None;
+                                    } else {
+                                        // Select this task
+                                        self.selected_task = Some(task_counter);
+                                    }
                                 }
+                            });
+                            ui.heading(task.title.as_str().truncate_ellipse(80));
+
+                            ui.label(task.project.as_str());
+
+                            if let Some(due) = &task.due {
+                                let due = Local.from_utc_datetime(due);
+                                let mut due_label = RichText::new(format!(
+                                    "Due: {}",
+                                    due.format("%a, %d %b %Y %H:%M")
+                                ));
+                                let days_to_finish =
+                                    due.signed_duration_since(Utc::now()).num_days();
+                                if overdue {
+                                    due_label = due_label.color(Color32::WHITE);
+                                } else if days_to_finish <= 1 {
+                                    due_label = due_label.color(Color32::RED);
+                                } else if days_to_finish <= 2 {
+                                    due_label = due_label.color(Color32::GOLD);
+                                };
+                                ui.label(due_label);
+                            }
+                            ui.separator();
+                            if task.description.starts_with("https://") {
+                                ui.hyperlink_to(
+                                    task.description.as_str().truncate_ellipse(100),
+                                    task.description.as_str(),
+                                );
+                            } else {
+                                ui.label(task.description.as_str().truncate_ellipse(100));
                             }
                         });
-                        ui.heading(task.title.as_str().truncate_ellipse(80));
-
-                        ui.label(task.project.as_str());
-
-                        if let Some(due) = &task.due {
-                            let due = Local.from_utc_datetime(due);
-                            let mut due_label = RichText::new(format!("Due: {}", due.format("%a, %d %b %Y %H:%M")));
-                            let days_to_finish = due.signed_duration_since(Utc::now()).num_days();
-                            if overdue {
-                                due_label = due_label.color(Color32::WHITE);
-                            } else if days_to_finish <= 1 {
-                                due_label = due_label.color(Color32::RED);
-                            } else if days_to_finish <= 2 {
-                                due_label = due_label.color(Color32::GOLD);
-                            };
-                            ui.label(due_label);
-                        }
-                        ui.separator();
-                        if task.description.starts_with("https://") {
-                            ui.hyperlink_to(
-                                task.description.as_str().truncate_ellipse(100),
-                                task.description.as_str(),
-                            );
-                        } else {
-                            ui.label(task.description.as_str().truncate_ellipse(100));
-                        }
                     });
-                });
 
-                task_counter += 1;
-                if task_counter % 4 == 0 {
-                    ui.end_row();
+                    task_counter += 1;
+                    if task_counter % columns == 0 {
+                        ui.end_row();
+                    }
                 }
-            }
-        });
+            });
     }
 
     fn trigger_refresh(&mut self, manually_triggered: bool) {
