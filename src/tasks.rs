@@ -36,6 +36,7 @@ fn try_get_tasks(sources: &mut Vec<(TaskSource, bool)>) -> Result<Vec<Task>> {
             let new_tasks = match source {
                 TaskSource::CalDav(s) => s.query_tasks()?,
                 TaskSource::GitHub(s) => s.query_tasks()?,
+                TaskSource::GitLab(_s) => vec![],
             };
             result.extend(new_tasks);
         }

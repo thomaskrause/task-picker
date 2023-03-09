@@ -21,9 +21,7 @@ pub struct TaskPickerApp {
     #[serde(skip)]
     messages: Toasts,
     #[serde(skip)]
-    new_caldav_source: Option<CalDavSource>,
-    #[serde(skip)]
-    new_github_source: Option<GitHubSource>,
+    new_source: Option<TaskSource>,
 }
 
 impl Default for TaskPickerApp {
@@ -35,8 +33,7 @@ impl Default for TaskPickerApp {
             selected_task: None,
             refresh_rate: Duration::from_secs(15),
             last_refreshed: Instant::now(),
-            new_caldav_source: None,
-            new_github_source: None,
+            new_source: None,
             messages: Toasts::default(),
         }
     }
@@ -59,74 +56,65 @@ impl TaskPickerApp {
 }
 
 impl TaskPickerApp {
-    fn add_caldav_source(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Add CalDAV source").show(ctx, |ui| {
-            if let Some(new_task_source) = &mut self.new_caldav_source {
-                ui.horizontal(|ui| {
-                    ui.label("Calendar Name");
-                    ui.text_edit_singleline(&mut new_task_source.calendar_name);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Base Url");
-                    ui.text_edit_singleline(&mut new_task_source.base_url);
-                });
+    fn add_new_source(&mut self, ctx: &egui::Context) {
+        let window_title = if let Some(new_source) = &self.new_source {
+            format!("Add {} source", new_source.type_name())
+        } else {
+            "Add source".to_string()
+        };
+        egui::Window::new(window_title).show(ctx, |ui| {
+            if let Some(new_source) = &mut self.new_source {
+                match new_source {
+                    TaskSource::CalDav(new_source) => {
+                        ui.horizontal(|ui| {
+                            ui.label("Calendar Name");
+                            ui.text_edit_singleline(&mut new_source.calendar_name);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Base Url");
+                            ui.text_edit_singleline(&mut new_source.base_url);
+                        });
 
+                        ui.horizontal(|ui| {
+                            ui.label("User Name");
+                            ui.text_edit_singleline(&mut new_source.username);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Password");
+                            ui.add(TextEdit::singleline(&mut new_source.password).password(true));
+                        });
+                    }
+                    TaskSource::GitHub(new_source) => {
+                        ui.horizontal(|ui| {
+                            ui.label("Name");
+                            ui.text_edit_singleline(&mut new_source.name);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Server URL");
+                            ui.text_edit_singleline(&mut new_source.server_url);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("API Token");
+                            ui.text_edit_singleline(&mut new_source.token);
+                        });
+                    }
+                    TaskSource::GitLab(_) => {
+                        ui.label("Not implemented yet");
+                    }
+                }
                 ui.horizontal(|ui| {
-                    ui.label("User Name");
-                    ui.text_edit_singleline(&mut new_task_source.username);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Password");
-                    ui.add(TextEdit::singleline(&mut new_task_source.password).password(true));
+                    if ui.button("Save").clicked() {
+                        if let Some(new_source) = &self.new_source {
+                            self.task_manager.add_source(new_source.clone());
+                        }
+                        self.new_source = None;
+                        self.trigger_refresh(true);
+                    }
+                    if ui.button("Discard").clicked() {
+                        self.new_source = None;
+                    }
                 });
             }
-
-            ui.horizontal(|ui| {
-                if ui.button("Save").clicked() {
-                    if let Some(new_task_source) = &self.new_caldav_source {
-                        self.task_manager
-                            .add_source(TaskSource::CalDav(new_task_source.clone()));
-                    }
-                    self.new_caldav_source = None;
-                    self.trigger_refresh(true);
-                }
-                if ui.button("Discard").clicked() {
-                    self.new_caldav_source = None;
-                }
-            });
-        });
-    }
-
-    fn add_github_source(&mut self, ctx: &egui::Context) {
-        egui::Window::new("Add GitHub Source").show(ctx, |ui| {
-            if let Some(new_source) = &mut self.new_github_source {
-                ui.horizontal(|ui| {
-                    ui.label("Name");
-                    ui.text_edit_singleline(&mut new_source.name);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("Server URL");
-                    ui.text_edit_singleline(&mut new_source.server_url);
-                });
-                ui.horizontal(|ui| {
-                    ui.label("API Token");
-                    ui.text_edit_singleline(&mut new_source.token);
-                });
-            }
-
-            ui.horizontal(|ui| {
-                if ui.button("Save").clicked() {
-                    if let Some(source) = &self.new_github_source {
-                        self.task_manager
-                            .add_source(TaskSource::GitHub(source.clone()));
-                    }
-                    self.new_github_source = None;
-                    self.trigger_refresh(true);
-                }
-                if ui.button("Discard").clicked() {
-                    self.new_github_source = None;
-                }
-            });
         });
     }
 
@@ -280,10 +268,10 @@ impl eframe::App for TaskPickerApp {
                 }
 
                 if ui.button("Add CalDAV").clicked() {
-                    self.new_caldav_source = Some(CalDavSource::default());
+                    self.new_source = Some(TaskSource::CalDav(CalDavSource::default()));
                 }
                 if ui.button("Add GitHub").clicked() {
-                    self.new_github_source = Some(GitHubSource::default());
+                    self.new_source = Some(TaskSource::GitHub(GitHubSource::default()));
                 }
             });
 
@@ -300,10 +288,8 @@ impl eframe::App for TaskPickerApp {
             ScrollArea::vertical().show(ui, |ui| self.render_tasks(ctx, ui));
         });
 
-        if self.new_github_source.is_some() {
-            self.add_github_source(ctx);
-        } else if self.new_caldav_source.is_some() {
-            self.add_caldav_source(ctx);
+        if self.new_source.is_some() {
+            self.add_new_source(ctx);
         } else if self
             .last_refreshed
             .elapsed()
