@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crate::{
-    sources::{CalDavSource, GitHubSource},
+    sources::{CalDavSource, GitHubSource, TaskSource},
     tasks::TaskManager,
 };
 use chrono::{Local, TimeZone, Utc};
@@ -84,7 +84,8 @@ impl TaskPickerApp {
             ui.horizontal(|ui| {
                 if ui.button("Save").clicked() {
                     if let Some(new_task_source) = &self.new_caldav_source {
-                        self.task_manager.add_caldav_source(new_task_source.clone());
+                        self.task_manager
+                            .add_source(TaskSource::CalDav(new_task_source.clone()));
                     }
                     self.new_caldav_source = None;
                     self.trigger_refresh(true);
@@ -116,7 +117,8 @@ impl TaskPickerApp {
             ui.horizontal(|ui| {
                 if ui.button("Save").clicked() {
                     if let Some(source) = &self.new_github_source {
-                        self.task_manager.set_github_source(source.clone());
+                        self.task_manager
+                            .add_source(TaskSource::GitHub(source.clone()));
                     }
                     self.new_github_source = None;
                     self.trigger_refresh(true);
@@ -131,7 +133,7 @@ impl TaskPickerApp {
     fn render_tasks(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
         let box_width = 220.0;
         let box_width_with_spacing = box_width + (2.0 * ui.style().spacing.item_spacing.x);
-        let ratio = (ui.available_width()-5.0) / (box_width_with_spacing);
+        let ratio = (ui.available_width() - 5.0) / (box_width_with_spacing);
         let columns = (ratio.floor() as usize).max(1);
 
         // Create a grid layout where each row can show up to 5 tasks
@@ -254,38 +256,23 @@ impl eframe::App for TaskPickerApp {
             .show(ctx, |ui| {
                 ui.heading("Sources");
 
-                let mut remove_caldav = None;
-                let mut remove_github = false;
+                let mut remove_source = None;
                 let mut refresh = false;
 
-                for i in 0..self.task_manager.caldav_sources.len() {
-                    let (s, enabled) = &mut self.task_manager.caldav_sources[i];
+                for i in 0..self.task_manager.sources.len() {
+                    let (s, enabled) = &mut self.task_manager.sources[i];
                     ui.horizontal(|ui| {
-                        if ui.checkbox(enabled, &s.calendar_name).changed() {
+                        if ui.checkbox(enabled, s.name()).changed() {
                             refresh = true;
                         }
                         if ui.small_button("X").clicked() {
-                            remove_caldav = Some(i);
+                            remove_source = Some(i);
                             refresh = true;
                         }
                     });
                 }
-                if let Some((_gh_source, enabled)) = &mut self.task_manager.github_source {
-                    ui.horizontal(|ui| {
-                        if ui.checkbox(enabled, "GitHub").changed() {
-                            refresh = true;
-                        }
-                        if ui.small_button("X").clicked() {
-                            remove_github = true;
-                            refresh = true;
-                        }
-                    });
-                }
-                if let Some(i) = remove_caldav {
-                    self.task_manager.caldav_sources.remove(i);
-                }
-                if remove_github {
-                    self.task_manager.github_source = None;
+                if let Some(i) = remove_source {
+                    self.task_manager.sources.remove(i);
                 }
 
                 if refresh {
@@ -296,12 +283,7 @@ impl eframe::App for TaskPickerApp {
                     self.new_caldav_source = Some(CalDavSource::default());
                 }
                 if ui.button("Add GitHub").clicked() {
-                    // Re-use the existing configuration or create a new one
-                    if let Some((source, _)) = &self.task_manager.github_source {
-                        self.new_github_source = Some(source.clone());
-                    } else {
-                        self.new_github_source = Some(GitHubSource::default());
-                    }
+                    self.new_github_source = Some(GitHubSource::default());
                 }
             });
 
