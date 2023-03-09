@@ -89,14 +89,8 @@ impl TaskManager {
                 }
             }
             Err(e) => {
-                {
-                    let mut tasks = tasks.lock().expect("Lock poisoning");
-                    tasks.clear();
-                }
-                {
-                    let mut last_error = last_error.lock().expect("Lock poisoning");
-                    *last_error = Some(e);
-                }
+                let mut last_error = last_error.lock().expect("Lock poisoning");
+                *last_error = Some(e);
             }
         });
     }
