@@ -100,7 +100,15 @@ impl TaskPickerApp {
         egui::Window::new("Add GitHub Source").show(ctx, |ui| {
             if let Some(new_source) = &mut self.new_github_source {
                 ui.horizontal(|ui| {
-                    ui.label("GitHub API Token");
+                    ui.label("Name");
+                    ui.text_edit_singleline(&mut new_source.name);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("Server URL");
+                    ui.text_edit_singleline(&mut new_source.server_url);
+                });
+                ui.horizontal(|ui| {
+                    ui.label("API Token");
                     ui.text_edit_singleline(&mut new_source.token);
                 });
             }

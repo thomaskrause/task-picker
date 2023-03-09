@@ -10,6 +10,8 @@ use crate::tasks::Task;
 pub struct GitHubSource {
     #[serde(skip)]
     agent: ureq::Agent,
+    pub name: String,
+    pub server_url: String,
     pub token: String,
 }
 
@@ -18,6 +20,8 @@ impl Default for GitHubSource {
         Self {
             agent: Agent::new(),
             token: Default::default(),
+            name: "GitHub".to_string(),
+            server_url: "https://api.github.com".to_string(),
         }
     }
 }
@@ -27,7 +31,7 @@ impl GitHubSource {
 
         let request = self
             .agent
-            .get("https://api.github.com/issues")
+            .get(&format!("{}/issues", self.server_url))
             .set("Authorization", &format!("Bearer {}", &self.token))
             .set("X-GitHub-Api-Version", "2022-11-28")
             .set("Accept", "application/vnd.github+json");
