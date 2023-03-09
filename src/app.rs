@@ -33,7 +33,7 @@ impl Default for TaskPickerApp {
         Self {
             task_manager: TaskManager::default(),
             selected_task: None,
-            refresh_rate: refresh_rate,
+            refresh_rate,
             last_refreshed: Instant::now() - refresh_rate,
             new_source: None,
             messages: Toasts::default(),
@@ -202,6 +202,12 @@ impl TaskPickerApp {
                                     due_label = due_label.color(Color32::GOLD);
                                 };
                                 ui.label(due_label);
+                            }
+                            if let Some(created) = &task.created {
+                                ui.label(format!(
+                                    "Created: {}",
+                                    created.format("%a, %d %b %Y %H:%M")
+                                ));
                             }
                             ui.separator();
                             if task.description.starts_with("https://") {

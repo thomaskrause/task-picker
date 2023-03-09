@@ -27,6 +27,20 @@ pub struct TaskManager {
     last_error: Arc<Mutex<Option<anyhow::Error>>>,
 }
 
+fn compare_optional<T: Ord>(a: &Option<T>, b: &Option<T>) -> Ordering {
+    if let (Some(a), Some(b)) = (a, b) {
+        a.cmp(b)
+    } else if a.is_none() {
+        if b.is_none() {
+            Ordering::Equal
+        } else {
+            Ordering::Greater
+        }
+    } else {
+        Ordering::Less
+    }
+}
+
 fn try_get_tasks(sources: &mut Vec<(TaskSource, bool)>) -> Result<Vec<Task>> {
     let mut result = Vec::default();
 
@@ -41,18 +55,15 @@ fn try_get_tasks(sources: &mut Vec<(TaskSource, bool)>) -> Result<Vec<Task>> {
         }
     }
 
-    // Show the tasks that are due next first
+    // Show the tasks that are due next first. Tasks without due date are sorted
+    // by their creation date (oldest first).
     result.sort_by(|a, b| {
-        if let (Some(a), Some(b)) = (a.due, b.due) {
-            a.cmp(&b)
-        } else if a.due.is_none() {
-            if b.due.is_none() {
-                Ordering::Equal
-            } else {
-                Ordering::Greater
-            }
+        let by_due_date = compare_optional(&a.due, &b.due);
+
+        if by_due_date == Ordering::Equal {
+            compare_optional(&a.created, &b.created)
         } else {
-            Ordering::Less
+            by_due_date
         }
     });
 

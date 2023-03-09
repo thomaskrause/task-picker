@@ -96,9 +96,7 @@ impl GitLabSource {
                     let created: Option<DateTime<Utc>> = issue
                         .get("created_at")
                         .and_then(|d| d.as_str())
-                        .map(|d| {
-                            DateTime::parse_from_str(d, "%+")
-                        })
+                        .map(|d| DateTime::parse_from_str(d, "%+"))
                         .transpose()?
                         .map(|d| d.into());
 
