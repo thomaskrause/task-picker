@@ -1,4 +1,5 @@
 use anyhow::{Context, Ok, Result};
+use chrono::NaiveDate;
 use json::JsonValue;
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -84,11 +85,19 @@ impl GitLabSource {
                         .context("Missing 'web_url' field for issue")?
                         .as_str()
                         .unwrap_or_default();
+
+                    let due = issue
+                        .get("due_date")
+                        .and_then(|due_date| due_date.as_str())
+                        .map(|due_date| NaiveDate::parse_from_str(due_date, "%Y-%m-%d"))
+                        .transpose()?
+                        .and_then(|due_date| due_date.and_hms_opt(0, 0, 0));
+
                     let task = Task {
                         project,
                         title: title.to_string(),
                         description: url.to_string(),
-                        due: None,
+                        due,
                     };
                     result.push(task);
                 }
