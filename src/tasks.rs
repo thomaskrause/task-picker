@@ -15,6 +15,7 @@ pub struct Task {
     pub title: String,
     pub description: String,
     pub due: Option<NaiveDateTime>,
+    pub created: Option<NaiveDateTime>,
 }
 
 #[derive(Serialize, Deserialize, Default)]

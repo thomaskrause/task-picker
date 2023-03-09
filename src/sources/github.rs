@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use chrono::{DateTime, Utc};
 use json::JsonValue;
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -69,11 +70,19 @@ impl GitHubSource {
                             .context("Missing 'html_url' field for issue")?
                             .as_str()
                             .unwrap_or_default();
+
+                        let created: Option<DateTime<Utc>> = issue
+                            .get("created_at")
+                            .and_then(|d| d.as_str())
+                            .map(|d| DateTime::parse_from_str(d, "%+"))
+                            .transpose()?
+                            .map(|d| d.into());
                         let task = Task {
                             project: project.to_string(),
                             title: title.to_string(),
                             description: url.to_string(),
                             due: None,
+                            created: created.map(|d| d.naive_local()),
                         };
                         result.push(task);
                     }

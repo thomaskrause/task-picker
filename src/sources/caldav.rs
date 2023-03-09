@@ -33,6 +33,7 @@ impl Default for CalDavSource {
 }
 
 const DATE_TIME_FORMAT: &str = "%Y%m%dT%H%M%S";
+const DATE_TIME_FORMAT_WITH_TZ: &str = "%Y%m%dT%H%M%S%Z";
 
 impl CalDavSource {
     pub fn query_tasks(&self) -> Result<Vec<Task>> {
@@ -86,11 +87,22 @@ impl CalDavSource {
                                     NaiveDateTime::parse_from_str(raw.as_str(), DATE_TIME_FORMAT)
                                 })
                                 .transpose()?;
+
+                            let created = props
+                                .get("CREATED")
+                                .map(|raw| {
+                                    NaiveDateTime::parse_from_str(
+                                        raw.as_str(),
+                                        DATE_TIME_FORMAT_WITH_TZ,
+                                    )
+                                })
+                                .transpose()?;
                             let task = Task {
                                 project: c.name().clone(),
                                 title: title.clone(),
                                 description,
                                 due,
+                                created,
                             };
                             result.push(task);
                         }
