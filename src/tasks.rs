@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use chrono::{DateTime, Utc};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 use crate::sources::{CalDavSource, GitHubSource};
@@ -14,7 +14,7 @@ pub struct Task {
     pub project: String,
     pub title: String,
     pub description: String,
-    pub due: Option<DateTime<Utc>>,
+    pub due: Option<NaiveDateTime>,
 }
 
 #[derive(Serialize, Deserialize, Default)]

@@ -68,7 +68,9 @@ impl CalDavSource {
                                 .unwrap_or_default();
                             let due = props
                                 .get("DUE")
-                                .map(|raw| Utc.datetime_from_str(raw.as_str(), "%Y%m%dT%H%M%S"))
+                                .map(|raw| {
+                                    NaiveDateTime::parse_from_str(raw.as_str(), "%Y%m%dT%H%M%S")
+                                })
                                 .transpose()?;
                             let task = Task {
                                 project: c.name().clone(),
@@ -128,8 +130,7 @@ impl GitHubSource {
                             .get("repository")
                             .context("Missing 'repository' field for issue")?
                         {
-                            repo
-                                .get("full_name")
+                            repo.get("full_name")
                                 .context("Missing 'full_name' field for issue")?
                                 .as_str()
                                 .unwrap_or_default()
