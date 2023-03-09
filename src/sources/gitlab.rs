@@ -1,4 +1,4 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Ok, Result};
 use json::JsonValue;
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -29,14 +29,13 @@ impl Default for GitLabSource {
 }
 
 impl GitLabSource {
-    pub fn query_tasks(&mut self) -> Result<Vec<Task>> {
+    fn extract_issues_for_page(&self, page: usize) -> Result<Vec<Task>> {
         let mut result = Vec::default();
-
         let request = self
             .agent
             .get(&format!(
-                "{}/issues?state=opened&assignee_username={}",
-                self.server_url, self.user_name
+                "{}/issues?page={}&state=opened&assignee_username={}",
+                self.server_url, page, self.user_name
             ))
             .set("PRIVATE-TOKEN", &self.token);
         let response = request.call()?;
@@ -46,7 +45,6 @@ impl GitLabSource {
         if let JsonValue::Array(assigned_issues) = assigned_issues {
             for issue in assigned_issues {
                 if let JsonValue::Object(issue) = issue {
-                    
                     let project = if let JsonValue::String(project_id) = issue
                         .get("project_id")
                         .context("Missing 'project_id' field for issue")?
@@ -73,10 +71,24 @@ impl GitLabSource {
                         due: None,
                     };
                     result.push(task);
-                
                 }
             }
         }
+        Ok(result)
+    }
+
+    pub fn query_tasks(&self) -> Result<Vec<Task>> {
+        let mut result = Vec::default();
+
+        for page in 1.. {
+            let paged_result = self.extract_issues_for_page(page)?;
+            if paged_result.is_empty() {
+                break;
+            } else {
+                result.extend(paged_result);
+            }
+        }
+
         Ok(result)
     }
 }

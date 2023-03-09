@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 
 use crate::{
-    sources::{CalDavSource, GitHubSource, TaskSource, GitLabSource},
+    sources::{CalDavSource, GitHubSource, GitLabSource, TaskSource},
     tasks::TaskManager,
 };
 use chrono::{Local, TimeZone, Utc};
@@ -9,6 +9,7 @@ use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
+use log::error;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -318,6 +319,7 @@ impl eframe::App for TaskPickerApp {
         }
 
         if let Some(err) = &self.task_manager.get_and_clear_last_err() {
+            error!("Query error: {}", &err);
             let message = err
                 .to_string()
                 .chars()
