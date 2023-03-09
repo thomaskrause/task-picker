@@ -32,6 +32,8 @@ impl Default for CalDavSource {
     }
 }
 
+const DATE_TIME_FORMAT: &str = "%Y%m%dT%H%M%S";
+
 impl CalDavSource {
     pub fn query_tasks(&self) -> Result<Vec<Task>> {
         let base_url = Url::parse(&self.base_url)?;
@@ -57,7 +59,18 @@ impl CalDavSource {
                         .filter(|s| s.as_str() == "COMPLETED")
                         .is_some()
                         || props.contains_key("COMPLETED");
-                    if !completed {
+                    // Check start due date if this task is ready to be started on
+                    let start_due = props
+                        .get("DTSTART")
+                        .map(|raw| NaiveDateTime::parse_from_str(raw.as_str(), DATE_TIME_FORMAT))
+                        .transpose()?
+                        .map(|t| Utc.from_utc_datetime(&t));
+                    let can_start = if let Some(start_due) = start_due {
+                        Utc::now().cmp(&start_due).is_ge()
+                    } else {
+                        true
+                    };
+                    if !completed && can_start {
                         if let Some(title) = props.get("SUMMARY") {
                             let description: String = props
                                 .get("DESCRIPTION")
@@ -70,7 +83,7 @@ impl CalDavSource {
                             let due = props
                                 .get("DUE")
                                 .map(|raw| {
-                                    NaiveDateTime::parse_from_str(raw.as_str(), "%Y%m%dT%H%M%S")
+                                    NaiveDateTime::parse_from_str(raw.as_str(), DATE_TIME_FORMAT)
                                 })
                                 .transpose()?;
                             let task = Task {
