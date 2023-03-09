@@ -108,6 +108,10 @@ impl TaskPickerApp {
                             ui.text_edit_singleline(&mut new_source.server_url);
                         });
                         ui.horizontal(|ui| {
+                            ui.label("User ID");
+                            ui.text_edit_singleline(&mut new_source.user_name);
+                        });
+                        ui.horizontal(|ui| {
                             ui.label("API Token");
                             ui.text_edit_singleline(&mut new_source.token);
                         });
