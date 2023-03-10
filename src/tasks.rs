@@ -33,7 +33,7 @@ impl Task {
 #[serde(default)]
 pub struct TaskManager {
     tasks: Arc<Mutex<Vec<Task>>>,
-    pub sources: Vec<(TaskSource, bool)>,
+    sources: Vec<(TaskSource, bool)>,
     #[serde(skip)]
     last_error: Arc<Mutex<Option<anyhow::Error>>>,
 }
@@ -111,8 +111,31 @@ impl TaskManager {
         tasks.clone()
     }
 
-    pub fn add_source(&mut self, source: TaskSource) {
-        self.sources.push((source, true));
+    pub fn sources(&self) -> &Vec<(TaskSource, bool)> {
+        &self.sources
+    }
+
+    pub fn source_ref_mut(&mut self, idx: usize) -> &mut (TaskSource, bool) {
+        &mut self.sources[idx]
+    }
+
+    /// Adds a new resource or replaces an existing one if a source with the
+    /// same name already exists.
+    pub fn add_or_replace_source(&mut self, source: TaskSource) {
+        // Make sure all tasks are sorted
+        self.sources.sort_by(|a, b| a.0.name().cmp(b.0.name()));
+
+        let existing = self
+            .sources
+            .binary_search_by(|(probe, _)| probe.name().cmp(source.name()));
+        match existing {
+            Ok(i) => self.sources[i].0 = source,
+            Err(i) => self.sources.insert(i, (source, true)),
+        };
+    }
+
+    pub fn remove_source(&mut self, idx: usize) -> (TaskSource, bool) {
+        self.sources.remove(idx)
     }
 
     pub fn get_and_clear_last_err(&self) -> Option<anyhow::Error> {
