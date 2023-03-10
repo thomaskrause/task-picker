@@ -154,7 +154,7 @@ impl TaskPickerApp {
                         .filter(|d| Local.from_utc_datetime(d).cmp(&Local::now()).is_le())
                         .is_some();
                     if Some(task.get_id()) == self.selected_task {
-                        group.fill =  ui.visuals().selection.bg_fill;
+                        group.fill = ui.visuals().selection.bg_fill;
                     } else if overdue {
                         group.fill = ui.visuals().error_fg_color;
                     }
@@ -165,8 +165,9 @@ impl TaskPickerApp {
                         ui.style_mut().wrap = Some(true);
 
                         ui.vertical(|ui| {
+                            let already_selected = Some(task.get_id()) == self.selected_task;
+
                             ui.vertical_centered_justified(|ui| {
-                                let already_selected = Some(task.get_id()) == self.selected_task;
                                 let caption = if already_selected {
                                     "Deselect"
                                 } else {
@@ -182,6 +183,9 @@ impl TaskPickerApp {
                                     }
                                 }
                             });
+                            if overdue && !already_selected {
+                                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
+                            }
                             ui.heading(task.title.as_str().truncate_ellipse(80));
 
                             ui.label(task.project.as_str());
@@ -192,15 +196,19 @@ impl TaskPickerApp {
                                     "Due: {}",
                                     due.format("%a, %d %b %Y %H:%M")
                                 ));
-                                let days_to_finish =
-                                    due.signed_duration_since(Utc::now()).num_days();
-                                if overdue {
-                                    due_label = due_label.color(Color32::WHITE);
-                                } else if days_to_finish <= 1 {
-                                    due_label = due_label.color(ui.visuals().error_fg_color);
-                                } else if days_to_finish <= 2 {
-                                    due_label = due_label.color(ui.visuals().warn_fg_color);
-                                };
+                                if !overdue {
+                                    // Mark the number of days with the color.
+                                    // If the task is overdue, the background
+                                    // already be red, an no further highlight
+                                    // is necessar.
+                                    let days_to_finish =
+                                        due.signed_duration_since(Utc::now()).num_days();
+                                    if days_to_finish <= 1 {
+                                        due_label = due_label.color(ui.visuals().error_fg_color);
+                                    } else if days_to_finish <= 2 {
+                                        due_label = due_label.color(ui.visuals().warn_fg_color);
+                                    };
+                                }
                                 ui.label(due_label);
                             }
                             if let Some(created) = &task.created {
