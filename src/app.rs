@@ -5,7 +5,7 @@ use crate::{
     tasks::TaskManager,
 };
 use chrono::{Local, TimeZone, Utc};
-use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2, Visuals};
+use egui::{popup_below_widget, Color32, Id, RichText, ScrollArea, TextEdit, Ui, Vec2, Visuals};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -281,13 +281,16 @@ impl eframe::App for TaskPickerApp {
                 for i in 0..self.task_manager.sources.len() {
                     let (s, enabled) = &mut self.task_manager.sources[i];
                     ui.horizontal(|ui| {
-                        if ui.checkbox(enabled, s.name()).changed() {
+                        let source_checkbox = ui.checkbox(enabled, s.name());
+                        if source_checkbox.changed() {
                             refresh = true;
                         }
-                        if ui.small_button("X").clicked() {
-                            remove_source = Some(i);
-                            refresh = true;
-                        }
+                        source_checkbox.context_menu(|ui| {
+                            if ui.button("Remove").clicked() {
+                                remove_source = Some(i);
+                                refresh = true;
+                            }
+                        });
                     });
                 }
                 if let Some(i) = remove_source {
