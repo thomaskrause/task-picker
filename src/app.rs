@@ -5,7 +5,7 @@ use crate::{
     tasks::TaskManager,
 };
 use chrono::{Local, TimeZone, Utc};
-use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2};
+use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2, Visuals};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -154,9 +154,9 @@ impl TaskPickerApp {
                         .filter(|d| Local.from_utc_datetime(d).cmp(&Local::now()).is_le())
                         .is_some();
                     if Some(task.get_id()) == self.selected_task {
-                        group.fill = Color32::DARK_BLUE;
+                        group.fill =  ui.visuals().selection.bg_fill;
                     } else if overdue {
-                        group.fill = Color32::DARK_RED;
+                        group.fill = ui.visuals().error_fg_color;
                     }
                     group.show(ui, |ui| {
                         let size = Vec2::new(box_width, 250.0);
@@ -197,9 +197,9 @@ impl TaskPickerApp {
                                 if overdue {
                                     due_label = due_label.color(Color32::WHITE);
                                 } else if days_to_finish <= 1 {
-                                    due_label = due_label.color(Color32::RED);
+                                    due_label = due_label.color(ui.visuals().error_fg_color);
                                 } else if days_to_finish <= 2 {
-                                    due_label = due_label.color(Color32::GOLD);
+                                    due_label = due_label.color(ui.visuals().warn_fg_color);
                                 };
                                 ui.label(due_label);
                             }
@@ -250,6 +250,7 @@ impl eframe::App for TaskPickerApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        ctx.set_visuals(Visuals::light());
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             // The top panel is often a good place for a menu bar:
             egui::menu::bar(ui, |ui| {
