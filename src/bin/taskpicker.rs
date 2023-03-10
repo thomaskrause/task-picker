@@ -10,7 +10,7 @@ fn main() -> eframe::Result<()> {
     let mut native_options = eframe::NativeOptions::default();
 
     if let Ok(icon) = image::load_from_memory_with_format(
-        include_bytes!("task-picker.png"),
+        include_bytes!("taskpicker.png"),
         image::ImageFormat::Png,
     ) {
         let icon = icon.to_rgba8();
