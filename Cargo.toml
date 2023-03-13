@@ -4,9 +4,9 @@ description = "Task Picker helps you to keep an overview about tasks from differ
 edition = "2021"
 license = "GPL-3.0-or-later"
 name = "task-picker"
+repository = "https://github.com/thomaskrause/task-picker"
 rust-version = "1.65"
 version = "0.1.0"
-repsository = "https://github.com/thomaskrause/task-picker"
 
 [dependencies]
 anyhow = {version = "1"}
