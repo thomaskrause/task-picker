@@ -73,17 +73,10 @@ impl CalDavSource {
                     };
                     if !completed && can_start {
                         if let Some(title) = props.get("SUMMARY") {
-                            let title = title
-                                .replace("\\\\", "\\")
-                                .replace("\\n", "\n")
-                                .replace("\\,", ",");
+                            let title = unescape(title);
                             let description: String = props
                                 .get("DESCRIPTION")
-                                .map(|s| {
-                                    s.replace("\\\\", "\\")
-                                        .replace("\\n", "\n")
-                                        .replace("\\,", ",")
-                                })
+                                .map(|s| unescape(s))
                                 .unwrap_or_default();
                             let due = props
                                 .get("DUE")
@@ -118,4 +111,52 @@ impl CalDavSource {
         }
         Ok(result)
     }
+}
+
+/// Unescape some known escaped characters in CalDAV.
+/// This always allocates a new string.
+fn unescape(val: &str) -> String {
+    let mut chars = val.chars().peekable();
+    let mut unescaped = String::new();
+
+    loop {
+        match chars.next() {
+            None => break,
+            Some(c) => {
+                let escaped_char = if c == '\\' {
+                    if let Some(escaped_char) = chars.peek() {
+                        let escaped_char = *escaped_char;
+                        match escaped_char {
+                            _ if escaped_char == '\\'
+                                || escaped_char == '"'
+                                || escaped_char == '\''
+                                || escaped_char == '`'
+                                || escaped_char == '$'
+                                || escaped_char == ',' =>
+                            {
+                                Some(escaped_char)
+                            }
+                            'n' => Some('\n'),
+                            'r' => Some('\r'),
+                            't' => Some('\t'),
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                if let Some(escaped_char) = escaped_char {
+                    unescaped.push(escaped_char);
+                    // skip the escaped character instead of outputting it again
+                    chars.next();
+                } else {
+                    unescaped.push(c);
+                };
+            }
+        }
+    }
+
+    unescaped
 }
