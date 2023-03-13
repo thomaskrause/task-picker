@@ -111,8 +111,8 @@ impl CalDavSource {
                                 project: c.name().clone(),
                                 title: title.clone(),
                                 description,
-                                due: due.map(|d| DateTime::<Utc>::from(d)),
-                                created: created.map(|d| DateTime::<Utc>::from(d)),
+                                due: due.map(DateTime::<Utc>::from),
+                                created: created.map(DateTime::<Utc>::from),
                                 id: props.get("UID").cloned(),
                             };
                             result.push(task);

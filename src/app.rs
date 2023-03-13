@@ -58,7 +58,9 @@ impl Default for TaskPickerApp {
         Self {
             task_manager: TaskManager::default(),
             selected_task: None,
-            last_refreshed: Instant::now() - Duration::from_secs(settings.refresh_rate_seconds),
+            last_refreshed: Instant::now()
+                .checked_sub(Duration::from_secs(settings.refresh_rate_seconds))
+                .unwrap_or_else(Instant::now),
             settings,
             edit_source: None,
             messages: Toasts::default(),
@@ -453,11 +455,7 @@ fn is_dns_error(err: &anyhow::Error) -> bool {
         // message for a matching string
         caldav_err.starts_with("Transport(Transport { kind: Dns,")
     } else if let Some(transport_err) = err.downcast_ref::<ureq::Error>() {
-        if ErrorKind::Dns == transport_err.kind() {
-            true
-        } else {
-            false
-        }
+        ErrorKind::Dns == transport_err.kind()
     } else {
         false
     }
