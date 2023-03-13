@@ -6,7 +6,7 @@ use crate::{
 };
 use chrono::prelude::*;
 use eframe::epaint::ahash::HashSet;
-use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2, Visuals};
+use egui::{Color32, RichText, ScrollArea, Style, TextEdit, Ui, Vec2, Visuals};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -18,10 +18,26 @@ const BOX_WIDTH: f32 = 220.0;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
+struct Settings {
+    refresh_rate: Duration,
+    dark_mode: bool,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            refresh_rate: Duration::from_secs(15),
+            dark_mode: false,
+        }
+    }
+}
+
+#[derive(serde::Deserialize, serde::Serialize)]
+#[serde(default)]
 pub struct TaskPickerApp {
     task_manager: TaskManager,
     selected_task: Option<String>,
-    refresh_rate: Duration,
+    settings: Settings,
     #[serde(skip)]
     last_refreshed: Instant,
     #[serde(skip)]
@@ -38,12 +54,12 @@ impl Default for TaskPickerApp {
     fn default() -> Self {
         let mut task_manager = TaskManager::default();
         task_manager.refresh();
-        let refresh_rate = Duration::from_secs(15);
+        let settings = Settings::default();
         Self {
             task_manager: TaskManager::default(),
             selected_task: None,
-            refresh_rate,
-            last_refreshed: Instant::now() - refresh_rate,
+            last_refreshed: Instant::now() - settings.refresh_rate,
+            settings,
             edit_source: None,
             messages: Toasts::default(),
             existing_edit_source: false,
@@ -60,11 +76,19 @@ impl TaskPickerApp {
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        let app = if let Some(storage) = cc.storage {
+            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+        } else {
+            TaskPickerApp::default()
+        };
+
+        if app.settings.dark_mode {
+            cc.egui_ctx.set_visuals(Visuals::dark());
+        } else {
+            cc.egui_ctx.set_visuals(Visuals::light());
         }
 
-        Default::default()
+        app
     }
 }
 
@@ -282,15 +306,20 @@ impl eframe::App for TaskPickerApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        ctx.set_visuals(Visuals::light());
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Quit").clicked() {
-                        _frame.close();
+            ui.horizontal(|ui| {
+                let style: Style = (*ui.ctx().style()).clone();
+                let new_visuals = style.visuals.light_dark_small_toggle_button(ui);
+                if let Some(visuals) = new_visuals {
+                    if visuals.dark_mode {
+                        self.settings.dark_mode = true;
+                    } else {
+                        self.settings.dark_mode = false;
                     }
-                });
+                    ui.ctx().set_visuals(visuals);
+                }
+                ui.separator();
+                ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
             });
         });
 
@@ -378,7 +407,7 @@ impl eframe::App for TaskPickerApp {
         } else if self
             .last_refreshed
             .elapsed()
-            .cmp(&self.refresh_rate)
+            .cmp(&self.settings.refresh_rate)
             .is_gt()
         {
             self.trigger_refresh(false);
