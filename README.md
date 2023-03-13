@@ -10,6 +10,9 @@ or cache.
 
 This is a desktop application using the <https://www.egui.rs/> GUI framework.
 
+**This application is currently in development and you should expect breaking
+changes during updates.**
+
 ## Sources for tasks
 
 Currently, the following task/issue trackers are supported:
