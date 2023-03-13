@@ -29,6 +29,6 @@ authenticated user is assigned to them.
 
 Tasks are sorted by their due date. If no due date is set, the oldest tasks are
 listed first. CalDAV tasks that have not started yet are hidden, which can be
-used to schedule tasks for later on. If the deadline is only 1 or 2 tasks away,
+used to schedule tasks for later on. If the deadline is only 1 or 2 days away,
 the task will be marked by color.
 
