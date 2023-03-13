@@ -82,7 +82,7 @@ impl GitHubSource {
                             title: title.to_string(),
                             description: url.to_string(),
                             due: None,
-                            created: created.map(|d| d.naive_local()),
+                            created,
                             id: Some(url.to_string()),
                         };
                         result.push(task);

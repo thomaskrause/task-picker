@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use chrono::prelude::*;
+use chrono::{format::ParseErrorKind, prelude::*};
 
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -33,7 +33,26 @@ impl Default for CalDavSource {
 }
 
 const DATE_TIME_FORMAT: &str = "%Y%m%dT%H%M%S";
-const DATE_TIME_FORMAT_WITH_TZ: &str = "%Y%m%dT%H%M%S%Z";
+const DATE_TIME_FORMAT_WITH_TZ: &str = "%Y%m%dT%H%M%S%#z";
+
+fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
+    match DateTime::parse_from_str(data, DATE_TIME_FORMAT_WITH_TZ) {
+        Ok(result) => {
+            let result_utc: DateTime<Utc> = DateTime::from(result);
+            Ok(result_utc)
+        }
+        Err(e) => {
+            if e.kind() == ParseErrorKind::TooShort {
+                // Try without a timezone and intepret it as local
+                let result_local = Local.datetime_from_str(data, DATE_TIME_FORMAT)?;
+                let result_utc: DateTime<Utc> = DateTime::from(result_local);
+                Ok(result_utc)
+            } else {
+                Err(e.into())
+            }
+        }
+    }
+}
 
 impl CalDavSource {
     pub fn query_tasks(&self) -> Result<Vec<Task>> {
@@ -63,11 +82,11 @@ impl CalDavSource {
                     // Check start due date if this task is ready to be started on
                     let start_due = props
                         .get("DTSTART")
-                        .map(|raw| NaiveDateTime::parse_from_str(raw.as_str(), DATE_TIME_FORMAT))
-                        .transpose()?
-                        .map(|t| Utc.from_utc_datetime(&t));
+                        .map(|raw| parse_caldav_date(raw))
+                        .transpose()?;
                     let can_start = if let Some(start_due) = start_due {
-                        Utc::now().cmp(&start_due).is_ge()
+                        let start_due: DateTime<Local> = DateTime::from(start_due);
+                        Local::now().cmp(&start_due).is_ge()
                     } else {
                         true
                     };
@@ -80,27 +99,20 @@ impl CalDavSource {
                                 .unwrap_or_default();
                             let due = props
                                 .get("DUE")
-                                .map(|raw| {
-                                    NaiveDateTime::parse_from_str(raw.as_str(), DATE_TIME_FORMAT)
-                                })
+                                .map(|raw| parse_caldav_date(raw))
                                 .transpose()?;
 
                             let created = props
                                 .get("CREATED")
-                                .map(|raw| {
-                                    NaiveDateTime::parse_from_str(
-                                        raw.as_str(),
-                                        DATE_TIME_FORMAT_WITH_TZ,
-                                    )
-                                })
+                                .map(|raw| parse_caldav_date(raw))
                                 .transpose()?;
 
                             let task = Task {
                                 project: c.name().clone(),
                                 title: title.clone(),
                                 description,
-                                due,
-                                created,
+                                due: due.map(|d| DateTime::<Utc>::from(d)),
+                                created: created.map(|d| DateTime::<Utc>::from(d)),
                                 id: props.get("UID").cloned(),
                             };
                             result.push(task);

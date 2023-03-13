@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::sources::TaskSource;
@@ -14,8 +14,8 @@ pub struct Task {
     pub project: String,
     pub title: String,
     pub description: String,
-    pub due: Option<NaiveDateTime>,
-    pub created: Option<NaiveDateTime>,
+    pub due: Option<DateTime<Utc>>,
+    pub created: Option<DateTime<Utc>>,
     pub id: Option<String>,
 }
 
@@ -122,9 +122,6 @@ impl TaskManager {
     /// Adds a new resource or replaces an existing one if a source with the
     /// same name already exists.
     pub fn add_or_replace_source(&mut self, source: TaskSource) {
-        // Make sure all tasks are sorted
-        self.sources.sort_by(|a, b| a.0.name().cmp(b.0.name()));
-
         let existing = self
             .sources
             .binary_search_by(|(probe, _)| probe.name().cmp(source.name()));

@@ -4,7 +4,7 @@ use crate::{
     sources::{CalDavSource, GitHubSource, GitLabSource, TaskSource},
     tasks::TaskManager,
 };
-use chrono::{Local, TimeZone, Utc};
+use chrono::prelude::*;
 use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2, Visuals};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
@@ -164,10 +164,7 @@ impl TaskPickerApp {
                 let mut task_counter = 0;
                 for task in self.task_manager.tasks() {
                     let mut group = egui::Frame::group(ui.style());
-                    let overdue = task
-                        .due
-                        .filter(|d| Local.from_utc_datetime(d).cmp(&Local::now()).is_le())
-                        .is_some();
+                    let overdue = task.due.filter(|d| d.cmp(&Utc::now()).is_le()).is_some();
                     if Some(task.get_id()) == self.selected_task {
                         group.fill = ui.visuals().selection.bg_fill;
                     } else if overdue {
@@ -206,7 +203,8 @@ impl TaskPickerApp {
                             ui.label(task.project.as_str());
 
                             if let Some(due) = &task.due {
-                                let due = Local.from_utc_datetime(due);
+                                // Convert to local time for display
+                                let due: DateTime<Local> = due.with_timezone(&Local);
                                 let mut due_label = RichText::new(format!(
                                     "Due: {}",
                                     due.format("%a, %d %b %Y %H:%M")
