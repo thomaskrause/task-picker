@@ -42,46 +42,44 @@ impl GitHubSource {
         if let JsonValue::Array(assigned_issues) = assigned_issues {
             for issue in assigned_issues {
                 if let JsonValue::Object(issue) = issue {
-                    if Some("open")
-                        == issue
-                            .get("state")
-                            .context("Missing 'state' field for issue")?
-                            .as_str()
-                    {
-                        let project = if let JsonValue::Object(repo) = issue
-                            .get("repository")
-                            .context("Missing 'repository' field for issue")?
-                        {
-                            repo.get("full_name")
-                                .context("Missing 'full_name' field for issue")?
+                    if Some("open") == issue["state"].as_str() {
+                        let project = if let JsonValue::Object(repo) = &issue["repository"] {
+                            repo["full_name"]
                                 .as_str()
-                                .unwrap_or_default()
+                                .context("Missing 'full_name' field for issue")?
                         } else {
                             "GitHub"
                         };
 
-                        let title = issue
-                            .get("title")
-                            .context("Missing 'title' field for issue")?
+                        let title = issue["title"]
                             .as_str()
-                            .unwrap_or_default();
-                        let url = issue
-                            .get("html_url")
-                            .context("Missing 'html_url' field for issue")?
+                            .context("Missing 'title' field for issue")?;
+                        let url = issue["html_url"]
                             .as_str()
-                            .unwrap_or_default();
+                            .context("Missing 'html_url' field for issue")?;
 
-                        let created: Option<DateTime<Utc>> = issue
-                            .get("created_at")
-                            .and_then(|d| d.as_str())
+                        let created: Option<DateTime<Utc>> = issue["created_at"]
+                            .as_str()
                             .map(|d| DateTime::parse_from_str(d, "%+"))
                             .transpose()?
                             .map(|d| d.into());
+
+                        let due: Option<DateTime<Utc>> =
+                            if let JsonValue::Object(milestone) = &issue["milestone"] {
+                                milestone["due_on"]
+                                    .as_str()
+                                    .map(|d| DateTime::parse_from_str(d, "%+"))
+                                    .transpose()?
+                                    .map(|d| d.into())
+                            } else {
+                                None
+                            };
+
                         let task = Task {
                             project: project.to_string(),
                             title: title.to_string(),
                             description: url.to_string(),
-                            due: None,
+                            due,
                             created,
                             id: Some(url.to_string()),
                         };
