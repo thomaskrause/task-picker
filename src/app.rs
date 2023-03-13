@@ -5,11 +5,14 @@ use crate::{
     tasks::{Task, TaskManager},
 };
 use chrono::prelude::*;
+use eframe::epaint::ahash::HashSet;
 use egui::{Color32, RichText, ScrollArea, TextEdit, Ui, Vec2, Visuals};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
 use log::error;
+use minicaldav::Error;
+use ureq::ErrorKind;
 
 const BOX_WIDTH: f32 = 220.0;
 
@@ -27,6 +30,8 @@ pub struct TaskPickerApp {
     edit_source: Option<TaskSource>,
     #[serde(skip)]
     existing_edit_source: bool,
+    #[serde(skip)]
+    connection_error_for_source: HashSet<String>,
 }
 
 impl Default for TaskPickerApp {
@@ -42,6 +47,7 @@ impl Default for TaskPickerApp {
             edit_source: None,
             messages: Toasts::default(),
             existing_edit_source: false,
+            connection_error_for_source: HashSet::default(),
         }
     }
 }
@@ -255,6 +261,8 @@ impl TaskPickerApp {
 
     fn trigger_refresh(&mut self, manually_triggered: bool) {
         self.last_refreshed = Instant::now();
+        self.connection_error_for_source.clear();
+
         self.task_manager.refresh();
 
         if manually_triggered {
@@ -297,8 +305,9 @@ impl eframe::App for TaskPickerApp {
 
                 for i in 0..self.task_manager.sources().len() {
                     let (s, enabled) = &mut self.task_manager.source_ref_mut(i);
+                    let source_name = s.name();
                     ui.horizontal(|ui| {
-                        let source_checkbox = ui.checkbox(enabled, s.name());
+                        let source_checkbox = ui.checkbox(enabled, source_name);
                         if source_checkbox.changed() {
                             refresh = true;
                         }
@@ -314,6 +323,11 @@ impl eframe::App for TaskPickerApp {
                                 ui.close_menu();
                             }
                         });
+                        if self.connection_error_for_source.contains(source_name) {
+                            ui.label("📵").on_hover_ui(|ui| {
+                                ui.label("Not Connected");
+                            });
+                        }
                     });
                 }
                 if let Some(i) = remove_source {
@@ -372,18 +386,42 @@ impl eframe::App for TaskPickerApp {
 
         for (source, active) in self.task_manager.sources() {
             if *active {
+                let source_name = source.name();
                 if let Some(err) = self.task_manager.get_and_clear_last_err(source.name()) {
-                    error!("Query error: {}", &err);
-                    let message = err
-                        .to_string()
-                        .chars()
-                        .chunks(50)
-                        .into_iter()
-                        .map(|c| c.collect::<String>())
-                        .join("\n");
-                    self.messages.error(message);
+                    if is_dns_error(&err) {
+                        // DNS errors indicate a connection problem on our side
+                        self.connection_error_for_source
+                            .insert(source_name.to_string());
+                    } else {
+                        error!("Error querying source \"{source_name}\". {}", &err);
+                        let shortened_message = err
+                            .to_string()
+                            .chars()
+                            .chunks(50)
+                            .into_iter()
+                            .map(|c| c.collect::<String>())
+                            .join("\n");
+                        self.messages
+                            .error(format!("[{source_name}]\n{shortened_message}"));
+                    }
                 }
             }
         }
+    }
+}
+
+fn is_dns_error(err: &anyhow::Error) -> bool {
+    if let Some(Error::Ical(caldav_err)) = err.downcast_ref::<minicaldav::Error>() {
+        // The errors only transport the string, so we have to search the error
+        // message for a matching string
+        caldav_err.starts_with("Transport(Transport { kind: Dns,")
+    } else if let Some(transport_err) = err.downcast_ref::<ureq::Error>() {
+        if ErrorKind::Dns == transport_err.kind() {
+            true
+        } else {
+            false
+        }
+    } else {
+        false
     }
 }

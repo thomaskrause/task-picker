@@ -6,7 +6,7 @@ rust-version = "1.65"
 version = "0.1.0"
 
 [dependencies]
-anyhow = "1"
+anyhow = {version = "1"}
 eframe = {version = "0.21.0", default-features = false, features = [
   "accesskit", # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
   "default_fonts", # Embed the default egui fonts.
@@ -24,13 +24,13 @@ url = "2"
 # You only need serde if you want app persistence:
 chrono = {version = "0.4.23", features = ["serde"]}
 ellipse = {version = "0.2.0"}
-serde = {version = "1", features = ["derive"]}
 json = "0.12.4"
 log = "0.4.17"
+serde = {version = "1", features = ["derive"]}
 
 # native:
-tracing-subscriber = "0.3"
 image = "0.24.5"
+tracing-subscriber = "0.3"
 
 [[bin]]
 name = "taskpicker"
@@ -41,4 +41,3 @@ opt-level = 2
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]
 opt-level = 2
-
