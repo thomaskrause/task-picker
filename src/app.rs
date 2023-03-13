@@ -202,23 +202,23 @@ impl TaskPickerApp {
 
                             ui.label(task.project.as_str());
 
-                            if let Some(due) = &task.due {
+                            if let Some(due_utc) = &task.due {
                                 // Convert to local time for display
-                                let due: DateTime<Local> = due.with_timezone(&Local);
+                                let due_local: DateTime<Local> = due_utc.with_timezone(&Local);
                                 let mut due_label = RichText::new(format!(
                                     "Due: {}",
-                                    due.format("%a, %d %b %Y %H:%M")
+                                    due_local.format("%a, %d %b %Y %H:%M")
                                 ));
                                 if !overdue {
                                     // Mark the number of days with the color.
                                     // If the task is overdue, the background
                                     // already be red, an no further highlight
-                                    // is necessar.
-                                    let days_to_finish =
-                                        due.signed_duration_since(Utc::now()).num_days();
-                                    if days_to_finish <= 1 {
+                                    // is necessary.
+                                    let hours_to_finish =
+                                        due_utc.signed_duration_since(Utc::now()).num_hours();
+                                    if hours_to_finish < 24 {
                                         due_label = due_label.color(ui.visuals().error_fg_color);
-                                    } else if days_to_finish <= 2 {
+                                    } else if hours_to_finish < 48 {
                                         due_label = due_label.color(ui.visuals().warn_fg_color);
                                     };
                                 }
