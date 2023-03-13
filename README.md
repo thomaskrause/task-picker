@@ -8,6 +8,8 @@ but you can list them and select the one you want to work on. It also needs to
 be online to collect the tasks from the sources, there is no local task storage
 or cache.
 
+This is a desktop application using the <https://www.egui.rs/> GUI framework.
+
 ## Sources for tasks
 
 Currently, the following task/issue trackers are supported:
