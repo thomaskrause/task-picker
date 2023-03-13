@@ -6,7 +6,7 @@ use crate::{
 };
 use chrono::prelude::*;
 use eframe::epaint::ahash::HashSet;
-use egui::{Color32, RichText, ScrollArea, Style, TextEdit, Ui, Vec2, Visuals};
+use egui::{Color32, Layout, RichText, ScrollArea, Slider, Style, TextEdit, Ui, Vec2, Visuals};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -19,14 +19,14 @@ const BOX_WIDTH: f32 = 220.0;
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 struct Settings {
-    refresh_rate: Duration,
+    refresh_rate_seconds: u64,
     dark_mode: bool,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            refresh_rate: Duration::from_secs(15),
+            refresh_rate_seconds: 15,
             dark_mode: false,
         }
     }
@@ -58,7 +58,7 @@ impl Default for TaskPickerApp {
         Self {
             task_manager: TaskManager::default(),
             selected_task: None,
-            last_refreshed: Instant::now() - settings.refresh_rate,
+            last_refreshed: Instant::now() - Duration::from_secs(settings.refresh_rate_seconds),
             settings,
             edit_source: None,
             messages: Toasts::default(),
@@ -307,7 +307,10 @@ impl eframe::App for TaskPickerApp {
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            ui.horizontal(|ui| {
+            ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
+                ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+                ui.separator();
+
                 let style: Style = (*ui.ctx().style()).clone();
                 let new_visuals = style.visuals.light_dark_small_toggle_button(ui);
                 if let Some(visuals) = new_visuals {
@@ -318,8 +321,13 @@ impl eframe::App for TaskPickerApp {
                     }
                     ui.ctx().set_visuals(visuals);
                 }
+
                 ui.separator();
-                ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+
+                ui.add(
+                    Slider::new(&mut self.settings.refresh_rate_seconds, 5..=120)
+                        .text("Refresh Rate (seconds)"),
+                );
             });
         });
 
@@ -407,7 +415,7 @@ impl eframe::App for TaskPickerApp {
         } else if self
             .last_refreshed
             .elapsed()
-            .cmp(&self.settings.refresh_rate)
+            .cmp(&Duration::from_secs(self.settings.refresh_rate_seconds))
             .is_gt()
         {
             self.trigger_refresh(false);
