@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'task-picker'",
+            "name": "Debug executable 'taskpicker'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=task-picker",
+                    "--bin=taskpicker",
                     "--package=task-picker"
                 ],
                 "filter": {
-                    "name": "task-picker",
+                    "name": "taskpicker",
                     "kind": "bin"
                 }
             },
@@ -49,7 +49,7 @@
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=task-picker",
+                    "--bin=taskpicker",
                     "--package=task-picker"
                 ],
                 "filter": {
