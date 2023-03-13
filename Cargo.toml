@@ -4,6 +4,7 @@ edition = "2021"
 name = "task-picker"
 rust-version = "1.65"
 version = "0.1.0"
+license = "GPL-3.0-or-later"
 
 [dependencies]
 anyhow = {version = "1"}
