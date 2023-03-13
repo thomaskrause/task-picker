@@ -1,10 +1,12 @@
 [package]
 authors = ["Thomas Krause <thomaskrause@posteo.de>"]
+description = "Task Picker helps you to keep an overview about tasks from different task trackers, like GitHub or CalDAV."
 edition = "2021"
+license = "GPL-3.0-or-later"
 name = "task-picker"
 rust-version = "1.65"
 version = "0.1.0"
-license = "GPL-3.0-or-later"
+repsository = "https://github.com/thomaskrause/task-picker"
 
 [dependencies]
 anyhow = {version = "1"}
