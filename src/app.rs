@@ -370,16 +370,20 @@ impl eframe::App for TaskPickerApp {
             self.trigger_refresh(false);
         }
 
-        if let Some(err) = &self.task_manager.get_and_clear_last_err() {
-            error!("Query error: {}", &err);
-            let message = err
-                .to_string()
-                .chars()
-                .chunks(50)
-                .into_iter()
-                .map(|c| c.collect::<String>())
-                .join("\n");
-            self.messages.error(message);
+        for (source, active) in self.task_manager.sources() {
+            if *active {
+                if let Some(err) = self.task_manager.get_and_clear_last_err(source.name()) {
+                    error!("Query error: {}", &err);
+                    let message = err
+                        .to_string()
+                        .chars()
+                        .chunks(50)
+                        .into_iter()
+                        .map(|c| c.collect::<String>())
+                        .join("\n");
+                    self.messages.error(message);
+                }
+            }
         }
     }
 }

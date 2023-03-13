@@ -3,8 +3,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use anyhow::Result;
 use chrono::{DateTime, Utc};
+use eframe::epaint::ahash::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::sources::TaskSource;
@@ -35,7 +35,7 @@ pub struct TaskManager {
     tasks: Arc<Mutex<Vec<Task>>>,
     sources: Vec<(TaskSource, bool)>,
     #[serde(skip)]
-    last_error: Arc<Mutex<Option<anyhow::Error>>>,
+    error_by_source: Arc<Mutex<HashMap<String, anyhow::Error>>>,
 }
 
 fn compare_optional<T: Ord>(a: &Option<T>, b: &Option<T>) -> Ordering {
@@ -52,56 +52,53 @@ fn compare_optional<T: Ord>(a: &Option<T>, b: &Option<T>) -> Ordering {
     }
 }
 
-fn try_get_tasks(sources: &mut Vec<(TaskSource, bool)>) -> Result<Vec<Task>> {
-    let mut result = Vec::default();
-
-    for (source, active) in sources {
-        if *active {
-            let new_tasks = match source {
-                TaskSource::CalDav(s) => s.query_tasks()?,
-                TaskSource::GitHub(s) => s.query_tasks()?,
-                TaskSource::GitLab(s) => s.query_tasks()?,
-            };
-            result.extend(new_tasks);
-        }
-    }
-
-    // Show the tasks that are due next first. Tasks without due date are sorted
-    // by their creation date (oldest first).
-    result.sort_by(|a, b| {
-        let by_due_date = compare_optional(&a.due, &b.due);
-
-        if by_due_date == Ordering::Equal {
-            compare_optional(&a.created, &b.created)
-        } else {
-            by_due_date
-        }
-    });
-
-    Ok(result)
-}
-
 impl TaskManager {
     /// Refresh task list in the background
     pub fn refresh(&mut self) {
-        let mut sources = self.sources.clone();
-        let last_error = self.last_error.clone();
+        let sources = self.sources.clone();
+        let error_by_source = self.error_by_source.clone();
         let tasks = self.tasks.clone();
 
-        rayon::spawn(move || match try_get_tasks(&mut sources) {
-            Ok(new_tasks) => {
-                {
-                    let mut tasks = tasks.lock().expect("Lock poisoning");
-                    *tasks = new_tasks;
-                }
-                {
-                    let mut last_error = last_error.lock().expect("Lock poisoning");
-                    *last_error = None;
+        rayon::spawn(move || {
+            // Query tasks for each source and collect errors when they occur, but
+            // proceed with the next source.
+            let mut new_tasks = Vec::default();
+            let mut new_errors = HashMap::default();
+            for (source, active) in &sources {
+                if *active {
+                    let tasks_for_source = match source {
+                        TaskSource::CalDav(s) => s.query_tasks(),
+                        TaskSource::GitHub(s) => s.query_tasks(),
+                        TaskSource::GitLab(s) => s.query_tasks(),
+                    };
+                    match tasks_for_source {
+                        Ok(tasks_for_source) => new_tasks.extend(tasks_for_source),
+                        Err(e) => {
+                            new_errors.insert(source.name().to_string(), e);
+                        }
+                    }
                 }
             }
-            Err(e) => {
-                let mut last_error = last_error.lock().expect("Lock poisoning");
-                *last_error = Some(e);
+
+            // Show the tasks that are due next first. Tasks without due date are sorted
+            // by their creation date (oldest first).
+            new_tasks.sort_by(|a, b| {
+                let by_due_date = compare_optional(&a.due, &b.due);
+
+                if by_due_date == Ordering::Equal {
+                    compare_optional(&a.created, &b.created)
+                } else {
+                    by_due_date
+                }
+            });
+
+            {
+                let mut tasks = tasks.lock().expect("Lock poisoning");
+                *tasks = new_tasks;
+            }
+            {
+                let mut error_by_source = error_by_source.lock().expect("Lock poisoning");
+                *error_by_source = new_errors;
             }
         });
     }
@@ -135,8 +132,8 @@ impl TaskManager {
         self.sources.remove(idx)
     }
 
-    pub fn get_and_clear_last_err(&self) -> Option<anyhow::Error> {
-        let mut last_error = self.last_error.lock().expect("Lock poisoning");
-        last_error.take()
+    pub fn get_and_clear_last_err(&self, source: &str) -> Option<anyhow::Error> {
+        let mut error_by_source = self.error_by_source.lock().expect("Lock poisoning");
+        error_by_source.remove(source)
     }
 }
