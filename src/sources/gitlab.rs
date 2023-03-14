@@ -50,19 +50,38 @@ impl GitLabSource {
         }
     }
 
-    fn extract_issues_for_page(&self, page: usize) -> Result<Vec<Task>> {
-        let mut result = Vec::default();
+    fn query_issues_for_page(&self, page: usize) -> Result<Vec<Task>> {
         let request = self
             .agent
             .get(&format!(
-                "{}/issues?page={}&state=opened&assignee_username={}",
-                self.server_url, page, self.user_name
+                "{}/issues?page={page}&state=opened&assignee_username={}",
+                self.server_url, self.user_name
             ))
             .set("PRIVATE-TOKEN", &self.token);
         let response = request.call()?;
         let body = response.into_string()?;
         let assigned_issues = json::parse(&body)?;
 
+        self.extract_issues(assigned_issues)
+    }
+
+    fn query_merge_requests_for_page(&self, page: usize) -> Result<Vec<Task>> {
+        let request = self
+            .agent
+            .get(&format!(
+                "{}/merge_requests?page={page}&state=opened&scope=assigned_to_me",
+                self.server_url,
+            ))
+            .set("PRIVATE-TOKEN", &self.token);
+        let response = request.call()?;
+        let body = response.into_string()?;
+        let assigned_issues = json::parse(&body)?;
+
+        self.extract_issues(assigned_issues)
+    }
+
+    fn extract_issues(&self, assigned_issues: JsonValue) -> Result<Vec<Task>> {
+        let mut result = Vec::default();
         if let JsonValue::Array(assigned_issues) = assigned_issues {
             for issue in assigned_issues {
                 if let JsonValue::Object(issue) = issue {
@@ -118,7 +137,15 @@ impl GitLabSource {
         let mut result = Vec::default();
 
         for page in 1.. {
-            let paged_result = self.extract_issues_for_page(page)?;
+            let paged_result = self.query_issues_for_page(page)?;
+            if paged_result.is_empty() {
+                break;
+            } else {
+                result.extend(paged_result);
+            }
+        }
+        for page in 1.. {
+            let paged_result = self.query_merge_requests_for_page(page)?;
             if paged_result.is_empty() {
                 break;
             } else {
