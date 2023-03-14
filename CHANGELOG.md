@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - GitLab source now also includes assigned merge requests as tasks.
 
+### Fixed
+
+- Do not gray-out other tasks if the selected task has vanished.
 
 ## [0.1.0] - 2023-03-13
 

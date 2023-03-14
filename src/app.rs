@@ -92,9 +92,7 @@ impl TaskPickerApp {
 
         app
     }
-}
 
-impl TaskPickerApp {
     fn edit_source(&mut self, ctx: &egui::Context) {
         let window_title = if let Some(source) = &self.edit_source {
             format!("{} source", source.type_name())
@@ -269,13 +267,22 @@ impl TaskPickerApp {
         let ratio = (ui.available_width() - 5.0) / (box_width_with_spacing);
         let columns = (ratio.floor() as usize).max(1);
 
+        let all_tasks = self.task_manager.tasks();
+        // Check that the selection is valid and unselect if the task does not
+        // exists
+        if let Some(selection) = self.selected_task.clone() {
+            if !all_tasks.iter().any(|t| t.get_id() == selection) {
+                self.selected_task = None;
+            }
+        }
+
         // Create a grid layout where each row can show up to 5 tasks
         egui::Grid::new("task-grid")
             .num_columns(columns)
             .show(ui, |ui| {
                 // Get all tasks for all active source
                 let mut task_counter = 0;
-                for task in self.task_manager.tasks() {
+                for task in all_tasks {
                     self.render_single_task(ui, task);
                     task_counter += 1;
                     if task_counter % columns == 0 {
