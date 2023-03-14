@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::sources::TaskSource;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Task {
     pub project: String,
     pub title: String,

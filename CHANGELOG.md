@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- GitLab source now also includes assigned merge requests as tasks.
+
+
 ## [0.1.0] - 2023-03-13
 
 Initial release
