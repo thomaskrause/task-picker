@@ -54,7 +54,10 @@ fn compare_optional<T: Ord>(a: &Option<T>, b: &Option<T>) -> Ordering {
 
 impl TaskManager {
     /// Refresh task list in the background
-    pub fn refresh(&mut self) {
+    pub fn refresh<F>(&mut self, finish_callback: F)
+    where
+        F: FnOnce() + Send + 'static,
+    {
         let sources = self.sources.clone();
         let error_by_source = self.error_by_source.clone();
         let tasks = self.tasks.clone();
@@ -100,6 +103,8 @@ impl TaskManager {
                 let mut error_by_source = error_by_source.lock().expect("Lock poisoning");
                 *error_by_source = new_errors;
             }
+
+            finish_callback();
         });
     }
 

@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Update view after refreshing the tasks in the background without needing any
+  other user interaction like mouse movement.
 - Do not gray-out other tasks if the selected task has vanished.
 
 ## [0.1.0] - 2023-03-13

@@ -6,7 +6,9 @@ use crate::{
 };
 use chrono::prelude::*;
 use eframe::epaint::ahash::HashSet;
-use egui::{Color32, Layout, RichText, ScrollArea, Slider, Style, TextEdit, Ui, Vec2, Visuals};
+use egui::{
+    Color32, Context, Layout, RichText, ScrollArea, Slider, Style, TextEdit, Ui, Vec2, Visuals,
+};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -52,8 +54,6 @@ pub struct TaskPickerApp {
 
 impl Default for TaskPickerApp {
     fn default() -> Self {
-        let mut task_manager = TaskManager::default();
-        task_manager.refresh();
         let settings = Settings::default();
         Self {
             task_manager: TaskManager::default(),
@@ -172,7 +172,7 @@ impl TaskPickerApp {
                             self.task_manager.add_or_replace_source(source.clone());
                         }
                         self.edit_source = None;
-                        self.trigger_refresh(true);
+                        self.trigger_refresh(true, ctx.clone());
                     }
                     if ui.button("Discard").clicked() {
                         self.edit_source = None;
@@ -292,11 +292,13 @@ impl TaskPickerApp {
             });
     }
 
-    fn trigger_refresh(&mut self, manually_triggered: bool) {
+    fn trigger_refresh(&mut self, manually_triggered: bool, ctx: Context) {
         self.last_refreshed = Instant::now();
         self.connection_error_for_source.clear();
 
-        self.task_manager.refresh();
+        self.task_manager.refresh(move || {
+            ctx.request_repaint();
+        });
 
         if manually_triggered {
             let mut msg = Toast::info("Refreshing task list in the background");
@@ -384,7 +386,7 @@ impl eframe::App for TaskPickerApp {
                 }
 
                 if refresh {
-                    self.trigger_refresh(true);
+                    self.trigger_refresh(true, ctx.clone());
                 }
 
                 ui.separator();
@@ -413,7 +415,7 @@ impl eframe::App for TaskPickerApp {
                 ui.heading("Tasks");
 
                 if ui.button("Refresh").clicked() {
-                    self.trigger_refresh(true);
+                    self.trigger_refresh(true, ctx.clone());
                 }
             });
             ScrollArea::vertical().show(ui, |ui| self.render_all_tasks(ctx, ui));
@@ -427,7 +429,7 @@ impl eframe::App for TaskPickerApp {
             .cmp(&Duration::from_secs(self.settings.refresh_rate_seconds))
             .is_gt()
         {
-            self.trigger_refresh(false);
+            self.trigger_refresh(false, ctx.clone());
         }
 
         for (source, active) in self.task_manager.sources() {
@@ -453,6 +455,9 @@ impl eframe::App for TaskPickerApp {
                 }
             }
         }
+
+        // Make sure we will be called after the refresh rate has been expired
+        ctx.request_repaint_after(Duration::from_secs(self.settings.refresh_rate_seconds));
     }
 }
 
