@@ -1,6 +1,6 @@
 # Task Picker
 
-![](src/bin/taskpicker.png)
+![](screenshot.png)
 
 Task Picker helps you to keep an overview about tasks from different task
 trackers, like GitHub or CalDAV. It does not actually manage these tasks itself,
