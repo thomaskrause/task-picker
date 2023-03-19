@@ -35,6 +35,11 @@ serde = {version = "1", features = ["derive"]}
 image = "0.24.5"
 tracing-subscriber = "0.3"
 
+[dev-dependencies]
+egui_skia = {version="0.3.0", features=["cpu_fix"]}
+skia-safe = "0.60.0"
+predicates = "3"
+
 [[bin]]
 name = "taskpicker"
 

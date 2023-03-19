@@ -472,3 +472,6 @@ fn is_dns_error(err: &anyhow::Error) -> bool {
         false
     }
 }
+
+#[cfg(test)]
+mod tests;
