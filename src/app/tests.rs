@@ -50,21 +50,25 @@ fn assert_screenshot(expected_file_name: &str, window_size: (i32, i32), ctx: imp
 }
 
 #[test]
-fn test_render_single_task() {
-    assert_screenshot("single_task.png", (250, 300), |ctx| {
+fn test_render_single_task_with_description() {
+    assert_screenshot("single_task_with_description.png", (250, 300), |ctx| {
         CentralPanel::default().show(ctx, |ui| {
             let mut app = TaskPickerApp::default();
 
             let task = Task {
-                project: "project".to_string(),
-                title: "Any task".to_string(),
-                description: "Has a description".to_string(),
-                due: None,
-                created: None,
+                project: "family".to_string(),
+                title: "Buy presents".to_string(),
+                description: "They should be surprising.\n\nBut not that surprising!".to_string(),
+                due: Some(Utc.with_ymd_and_hms(2022, 12, 24, 20, 0, 0).unwrap()),
+                created: Some(Utc.with_ymd_and_hms(2022, 09, 1, 12, 24, 30).unwrap()),
                 id: None,
             };
 
-            app.render_single_task(ui, task);
+            app.render_single_task(
+                ui,
+                task,
+                Utc.with_ymd_and_hms(2022, 12, 1, 10, 0, 0).unwrap(),
+            );
         });
     });
 }
