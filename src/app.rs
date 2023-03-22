@@ -224,7 +224,6 @@ impl TaskPickerApp {
                     }
                 }
                 ui.heading(task.title.as_str().truncate_ellipse(80));
-
                 ui.label(task.project.as_str());
 
                 if let Some(due_utc) = &task.due {
@@ -262,12 +261,11 @@ impl TaskPickerApp {
         });
     }
 
-    fn render_all_tasks(&mut self, _ctx: &egui::Context, ui: &mut Ui, now: DateTime<Utc>,) {
+    fn render_all_tasks(&mut self, all_tasks: Vec<Task>, ui: &mut Ui, now: DateTime<Utc>) {
         let box_width_with_spacing = BOX_WIDTH + (2.0 * ui.style().spacing.item_spacing.x);
         let ratio = (ui.available_width() - 5.0) / (box_width_with_spacing);
         let columns = (ratio.floor() as usize).max(1);
 
-        let all_tasks = self.task_manager.tasks();
         // Check that the selection is valid and unselect if the task does not
         // exists
         if let Some(selection) = self.selected_task.clone() {
@@ -418,7 +416,9 @@ impl eframe::App for TaskPickerApp {
                     self.trigger_refresh(true, ctx.clone());
                 }
             });
-            ScrollArea::vertical().show(ui, |ui| self.render_all_tasks(ctx, ui, Utc::now()));
+            ScrollArea::vertical().show(ui, |ui| {
+                self.render_all_tasks(self.task_manager.tasks(), ui, Utc::now())
+            });
         });
 
         if self.edit_source.is_some() {
