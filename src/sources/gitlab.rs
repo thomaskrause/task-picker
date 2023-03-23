@@ -1,5 +1,5 @@
 use anyhow::{Context, Ok, Result};
-use chrono::{DateTime, TimeZone, Utc};
+use chrono::{DateTime, NaiveDate, Utc};
 use json::JsonValue;
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -105,11 +105,13 @@ impl GitLabSource {
                         .as_str()
                         .unwrap_or_default();
 
-                    let due = issue
+                    let due: Option<DateTime<Utc>> = issue
                         .get("due_date")
                         .and_then(|due_date| due_date.as_str())
-                        .map(|due_date| Utc.datetime_from_str(due_date, "%Y-%m-%d"))
-                        .transpose()?;
+                        .map(|due_date| NaiveDate::parse_from_str(due_date, "%Y-%m-%d"))
+                        .transpose()?
+                        .and_then(|due_date| due_date.and_hms_opt(0, 0, 0))
+                        .map(|due_date| DateTime::<Utc>::from_utc(due_date, Utc));
 
                     let created: Option<DateTime<Utc>> = issue
                         .get("created_at")
@@ -122,7 +124,7 @@ impl GitLabSource {
                         project,
                         title: title.to_string(),
                         description: url.to_string(),
-                        due,
+                        due: due.into(),
                         created,
                         id: Some(url.to_string()),
                     };
