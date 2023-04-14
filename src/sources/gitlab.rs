@@ -45,7 +45,7 @@ impl GitLabSource {
             for todo in all_todos {
                 let project = todo["project"]["name_with_namespace"]
                     .as_str()
-                    .unwrap_or_else(|| &self.name);
+                    .unwrap_or(&self.name);
 
                 let title = todo["body"].as_str().unwrap_or_default();
 
@@ -74,7 +74,7 @@ impl GitLabSource {
                     project: project.to_string(),
                     title: title.to_string(),
                     description: url.to_string(),
-                    due: due.into(),
+                    due,
                     created,
                     id: Some(url.to_string()),
                 };
