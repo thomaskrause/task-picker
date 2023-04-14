@@ -36,7 +36,7 @@ image = "0.24.5"
 tracing-subscriber = "0.3"
 
 [patch.crates-io]
-minicaldav = { git = 'https://gitlab.com/thomaskrause/minicaldav.git' } 
+minicaldav = { git = 'https://gitlab.com/thomaskrause/minicaldav.git', branch='develop' } 
 
 [[bin]]
 name = "taskpicker"
