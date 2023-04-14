@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- GitLab issues with a `due_date` where not parsed because it only provides a
+- GitLab issues with a `due_date` were not parsed because it only provides a
   date, not a time. Add default time to date to make it compatible with our
   internal format.
 
