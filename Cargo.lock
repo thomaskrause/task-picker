@@ -1576,8 +1576,7 @@ dependencies = [
 [[package]]
 name = "minicaldav"
 version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67e0c1d4dbfba09756325cf67cc4e186e4d2a0dc00321223ff0e0bf4469fd4a0"
+source = "git+https://gitlab.com/thomaskrause/minicaldav.git#e84ce4fb900747d2dcb026b53fda91248afd9efa"
 dependencies = [
  "base64",
  "log",
