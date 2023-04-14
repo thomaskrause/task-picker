@@ -1594,9 +1594,8 @@ dependencies = [
 
 [[package]]
 name = "minicaldav"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67e0c1d4dbfba09756325cf67cc4e186e4d2a0dc00321223ff0e0bf4469fd4a0"
+version = "0.5.1"
+source = "git+https://gitlab.com/thomaskrause/minicaldav.git?branch=develop#87fa96e1de366107a12da129b6143938525a9c82"
 dependencies = [
  "base64",
  "log",
@@ -3417,8 +3416,3 @@ dependencies = [
  "quote",
  "syn 1.0.109",
 ]
-
-[[patch.unused]]
-name = "minicaldav"
-version = "0.5.1"
-source = "git+https://gitlab.com/thomaskrause/minicaldav.git?branch=develop#87fa96e1de366107a12da129b6143938525a9c82"
