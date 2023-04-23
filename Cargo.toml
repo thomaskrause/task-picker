@@ -25,7 +25,7 @@ ureq = "2.5"
 url = "2"
 
 # You only need serde if you want app persistence:
-chrono = {version = "0.4.23", features = ["serde"]}
+chrono = {version = "0.4.24", default-features = false, features = ["std", "clock", "serde"]}
 ellipse = {version = "0.2.0"}
 json = "0.12.4"
 log = "0.4.17"

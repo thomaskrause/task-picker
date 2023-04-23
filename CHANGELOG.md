@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitLab issues with a `due_date` were not parsed because it only provides a
   date, not a time. Add default time to date to make it compatible with our
   internal format.
+- Avoid dependency to outdated time crate by disabling the "oldtime" feature in
+  chrono.
 
 ### Changed
 
