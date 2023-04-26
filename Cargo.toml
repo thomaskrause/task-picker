@@ -6,7 +6,7 @@ license = "GPL-3.0-or-later"
 name = "task-picker"
 repository = "https://github.com/thomaskrause/task-picker"
 rust-version = "1.65"
-version = "0.2.0"
+version = "0.3.0"
 
 [dependencies]
 anyhow = {version = "1"}
