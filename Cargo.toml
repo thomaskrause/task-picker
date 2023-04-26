@@ -19,7 +19,7 @@ eframe = {version = "0.21.0", default-features = false, features = [
 egui = "0.21.0"
 egui-notify = "0.6"
 itertools = "0.10"
-minicaldav = "0.6.0"
+minicaldav = "0.7"
 rayon = "1.7.0"
 ureq = "2.5"
 url = "2"
