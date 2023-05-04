@@ -397,15 +397,15 @@ impl eframe::App for TaskPickerApp {
                 ui.label("Add source");
 
                 ui.horizontal_wrapped(|ui| {
-                    if ui.button("CalDAV").clicked() {
+                    if ui.button(egui::RichText::new(format!("{} CalDAV", egui_phosphor::CALENDAR))).clicked() {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::CalDav(CalDavSource::default()));
                     }
-                    if ui.button("GitHub").clicked() {
+                    if ui.button(egui::RichText::new(format!("{} GitHub", egui_phosphor::GITHUB_LOGO))).clicked() {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::GitHub(GitHubSource::default()));
                     }
-                    if ui.button("GitLab").clicked() {
+                    if ui.button(egui::RichText::new(format!("{} GitLab", egui_phosphor::GITLAB_LOGO))).clicked() {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::GitLab(GitLabSource::default()));
                     }
