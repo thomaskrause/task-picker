@@ -90,6 +90,10 @@ impl TaskPickerApp {
             cc.egui_ctx.set_visuals(Visuals::light());
         }
 
+        let mut fonts = egui::FontDefinitions::default();
+        egui_phosphor::add_to_fonts(&mut fonts);
+        cc.egui_ctx.set_fonts(fonts);
+
         app
     }
 
@@ -414,7 +418,7 @@ impl eframe::App for TaskPickerApp {
             ui.horizontal(|ui| {
                 ui.heading("Tasks");
 
-                if ui.button("Refresh").clicked() {
+                if ui.button(egui::RichText::new(format!("{} Refresh", egui_phosphor::ARROWS_CLOCKWISE))).clicked() {
                     self.trigger_refresh(true, ctx.clone());
                 }
             });
