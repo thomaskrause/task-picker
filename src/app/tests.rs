@@ -1,4 +1,4 @@
-use std::{path::PathBuf, vec};
+use std::{path::PathBuf, vec, sync::Once};
 
 use chrono::Days;
 use egui::{CentralPanel, Pos2};
@@ -108,8 +108,20 @@ fn assert_screenshot_after_n_frames(
     backend.paint(surface.canvas());
     assert_eq_screenshot(expected_file_name, &mut surface);
 }
+
+
+static INIT: Once = Once::new();
+
+pub fn set_timezone_once() {
+    INIT.call_once(|| {
+        std::env::set_var("TZ", "CET")
+    });
+}
+
+
 #[test]
 fn test_render_single_task_with_description() {
+    set_timezone_once();
     assert_screenshot("single_task_with_description.png", (250, 300), |ctx| {
         CentralPanel::default().show(ctx, |ui| {
             let mut app = TaskPickerApp::default();
@@ -134,6 +146,7 @@ fn test_render_single_task_with_description() {
 
 #[test]
 fn test_render_task_grid() {
+    set_timezone_once();
     assert_screenshot_after_n_frames("task_grid.png", (600, 500), 2, |ctx| {
         let now = Utc.with_ymd_and_hms(2023, 03, 19, 17, 42, 00).unwrap();
 

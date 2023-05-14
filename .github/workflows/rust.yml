@@ -38,10 +38,11 @@ jobs:
         uses: actions/upload-artifact@v3
         if: ${{ always() }}
         with:
-          name: actual-screenshots.
+          name: actual-screenshots
           path: |
             src/app/tests/actual
           retention-days: 5
+          if-no-files-found: ignore
 
   fmt:
     name: Rustfmt
