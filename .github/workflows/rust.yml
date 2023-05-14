@@ -2,80 +2,25 @@ on:
   push:
   merge_group:
 
-
-name: CI
+name: Rust
 
 jobs:
-  check:
-    name: Check
+  format:
+    name: Format Code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
+      - uses: mbrobbel/rustfmt-check@0.5.0
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --all-features
-
-  test:
-    name: Test Suite
+          token: ${{ secrets.GITHUB_TOKEN }}
+  static_code_analysis:
+    name: Static code analysis
+    needs: format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1.4.4
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-      - run: sudo apt-get update
-      - run: sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --lib
-      - name: Archive screenshots for failed UI tests
-        uses: actions/upload-artifact@v3
-        if: ${{ always() }}
-        with:
-          name: actual-screenshots
-          path: |
-            src/app/tests/actual
-          retention-days: 5
-          if-no-files-found: ignore
-
-  fmt:
-    name: Rustfmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt
-      - uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-  clippy:
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
           components: clippy
-      - uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
-
+      - uses: actions/checkout@v3
+      - run: cargo clippy --all-features -- -D warnings
