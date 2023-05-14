@@ -16,15 +16,19 @@ struct Info {
 }
 
 fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
-    let mut output_file = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    output_file.push("src/app/tests/expected");
-    output_file.push(expected_file_name);
+    let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    let mut output_file_rel = PathBuf::from("src/app/tests/expected");
+    output_file_rel.push(expected_file_name);
+    let output_file = manifest_dir.join(&output_file_rel);
 
     // Write out the screenshot to a file that is removed if test ist successful
-    let mut actual_file = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    actual_file.push("src/app/tests/actual");
-    std::fs::create_dir_all(&actual_file).unwrap();
-    actual_file.push(expected_file_name);
+    let mut actual_file_rel = PathBuf::from("src/app/tests/actual");
+    actual_file_rel.push(expected_file_name);
+
+    let actual_file = manifest_dir.join(&actual_file_rel);
+    std::fs::create_dir_all(&actual_file.parent().unwrap()).unwrap();
+
     let actual_image_skia = surface.image_snapshot();
     let skia_data = actual_image_skia
         .encode_to_data(skia_safe::EncodedImageFormat::PNG)
@@ -59,7 +63,12 @@ fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
     let actual_hash = hasher.hash_image(&actual_image);
 
     let dist = actual_hash.dist(&expected_hash);
-    assert_eq!(0, dist);
+    assert!(
+        dist == 0,
+        "{} != {}",
+        actual_file_rel.to_string_lossy(),
+        output_file_rel.to_string_lossy(),
+    );
 
     // Remove the created file
     std::fs::remove_file(actual_file).unwrap();
