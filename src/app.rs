@@ -1,8 +1,10 @@
 use std::time::{Duration, Instant};
 
+#[double]
+use crate::tasks::TaskManager;
 use crate::{
     sources::{CalDavSource, GitHubSource, GitLabSource, TaskSource},
-    tasks::{Task, TaskManager},
+    tasks::Task,
 };
 use chrono::prelude::*;
 use eframe::epaint::ahash::HashSet;
@@ -14,6 +16,7 @@ use ellipse::Ellipse;
 use itertools::Itertools;
 use log::error;
 use minicaldav::Error;
+use mockall_double::double;
 use ureq::ErrorKind;
 
 const BOX_WIDTH: f32 = 220.0;

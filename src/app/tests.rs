@@ -1,14 +1,12 @@
-use std::{path::PathBuf, vec};
+use std::{io::Write, path::PathBuf, vec};
 
 use chrono::Days;
 use egui::{CentralPanel, Pos2};
 use egui_skia::{EguiSkia, RasterizeOptions};
-use predicates::{
-    path::{eq_file, BinaryFilePredicate},
-    prelude::*,
-};
+use mockall::predicate::*;
 use serde::Serialize;
 use skia_safe::Surface;
+use visual_hash::HasherConfig;
 
 use super::*;
 
@@ -17,21 +15,51 @@ struct Info {
     actual_file: PathBuf,
 }
 
-fn eq_screenshot(expected_file_name: &str, surface: &mut Surface) -> BinaryFilePredicate {
+fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
     let mut output_file = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     output_file.push("src/app/tests/expected");
     output_file.push(expected_file_name);
+
+    // Write out the screenshot as temporary file
+    let actual_file = tempfile::NamedTempFile::new().unwrap();
+    let actual_image_skia = surface.image_snapshot();
+    let skia_data = actual_image_skia
+        .encode_to_data(skia_safe::EncodedImageFormat::PNG)
+        .unwrap();
+    actual_file
+        .as_file()
+        .write_all(skia_data.as_bytes())
+        .unwrap();
+
     if std::env::var("UPDATE_EXPECT").is_ok() {
         // Write current snapshot to to expected path
-        let image = surface.image_snapshot();
-        let data = image
+        let data = actual_image_skia
             .encode_to_data(skia_safe::EncodedImageFormat::PNG)
             .unwrap();
         std::fs::write(&output_file, data.as_bytes()).unwrap();
     }
 
-    // Compare with the expected file
-    eq_file(&output_file)
+    // Read in expected image from file
+    let expected_image = image::io::Reader::open(output_file)
+        .unwrap()
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .unwrap();
+    let actual_image = image::io::Reader::open(actual_file)
+        .unwrap()
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .unwrap();
+
+    // Compare images using a visual hash
+    let hasher = HasherConfig::default().to_hasher();
+    let expected_hash = hasher.hash_image(&expected_image);
+    let actual_hash = hasher.hash_image(&actual_image);
+
+    let dist = actual_hash.dist(&expected_hash);
+    assert_eq!(0, dist);
 }
 
 fn assert_screenshot(expected_file_name: &str, window_size: (i32, i32), ctx: impl FnMut(&Context)) {
@@ -66,20 +94,8 @@ fn assert_screenshot_after_n_frames(
     }
 
     backend.paint(surface.canvas());
-
-    let p = eq_screenshot(expected_file_name, &mut surface);
-    assert_eq!(
-        true,
-        p.eval(
-            surface
-                .image_snapshot()
-                .encode_to_data(skia_safe::EncodedImageFormat::PNG)
-                .unwrap()
-                .as_bytes(),
-        )
-    )
+    assert_eq_screenshot(expected_file_name, &mut surface);
 }
-
 #[test]
 fn test_render_single_task_with_description() {
     assert_screenshot("single_task_with_description.png", (250, 300), |ctx| {
