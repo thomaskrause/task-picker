@@ -66,3 +66,12 @@ jobs:
           minimum-ratio: -0.05 # Fails Github action once code coverage is decreasing too much
           send-summary-comment: true
           show-annotations: "warning" # Possible options warning|error
+      - name: Upload screenshots for failed UI tests
+        uses: actions/upload-artifact@v3
+        if: ${{ always() }}
+        with:
+          name: actual-screenshots
+          path: |
+            src/app/tests/actual
+          retention-days: 5
+          if-no-files-found: ignore
