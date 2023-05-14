@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 #[double]
 use crate::tasks::TaskManager;
 use crate::{
-    sources::{CalDavSource, GitHubSource, GitLabSource, TaskSource},
+    sources::{CalDavSource, GitHubSource, GitLabSource, TaskSource, CALDAV_ICON, GITHUB_ICON, GITLAB_ICON},
     tasks::Task,
 };
 use chrono::prelude::*;
@@ -359,8 +359,10 @@ impl eframe::App for TaskPickerApp {
                 for i in 0..self.task_manager.sources().len() {
                     let (s, enabled) = &mut self.task_manager.source_ref_mut(i);
                     let source_name = s.name();
+                    let source_icon = s.icon();
+                
                     ui.horizontal(|ui| {
-                        let source_checkbox = ui.checkbox(enabled, source_name);
+                        let source_checkbox = ui.checkbox(enabled, egui::RichText::new(format!("{source_icon} {source_name}")));
                         if source_checkbox.changed() {
                             refresh = true;
                         }
@@ -398,15 +400,15 @@ impl eframe::App for TaskPickerApp {
                 ui.label("Add source");
 
                 ui.horizontal_wrapped(|ui| {
-                    if ui.button(egui::RichText::new(format!("{} CalDAV", egui_phosphor::CALENDAR))).clicked() {
+                    if ui.button(egui::RichText::new(format!("{} CalDAV", CALDAV_ICON))).clicked() {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::CalDav(CalDavSource::default()));
                     }
-                    if ui.button(egui::RichText::new(format!("{} GitHub", egui_phosphor::GITHUB_LOGO))).clicked() {
+                    if ui.button(egui::RichText::new(format!("{} GitHub", GITHUB_ICON))).clicked() {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::GitHub(GitHubSource::default()));
                     }
-                    if ui.button(egui::RichText::new(format!("{} GitLab", egui_phosphor::GITLAB_LOGO))).clicked() {
+                    if ui.button(egui::RichText::new(format!("{} GitLab", GITLAB_ICON))).clicked() {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::GitLab(GitLabSource::default()));
                     }
