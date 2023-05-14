@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2023-04-26
+
+### Fixed
+
+- GitLab issues with a `due_date` were not parsed because it only provides a
+  date, not a time. Add default time to date to make it compatible with our
+  internal format.
+- Fix getting TODOs from a SOgo CalDAV server
+- Avoid dependency to outdated time crate by disabling the "oldtime" feature in
+  chrono.
+
+### Changed
+
+- GitLab source now uses the TODO list instead of assigned issues or merge
+  requests. This is much more flexible, since anything can be a TODO item, e.g.
+  the new "work items" which are sub-task like. Using the TODO-endpoint also
+  means our also corresponds with the TODO page on GitLab. A disadvantage is
+  that even when an issue is closed, you still have to mark the TODO as done.
+
 ## [0.2.0] - 2023-03-15
 
 ### Added
