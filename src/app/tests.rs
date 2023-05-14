@@ -21,7 +21,7 @@ fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
     output_file.push(expected_file_name);
 
     // Write out the screenshot to a file that is removed if test ist successful
-    let mut actual_file =  PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let mut actual_file = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     actual_file.push("src/app/tests/actual");
     std::fs::create_dir_all(&actual_file).unwrap();
     actual_file.push(expected_file_name);
