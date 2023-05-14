@@ -6,6 +6,8 @@ use ureq::Agent;
 
 use crate::tasks::Task;
 
+use super::GITHUB_ICON;
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct GitHubSource {
@@ -76,7 +78,7 @@ impl GitHubSource {
                             };
 
                         let task = Task {
-                            project: project.to_string(),
+                            project: format!("{} {}", GITHUB_ICON, project),
                             title: title.to_string(),
                             description: url.to_string(),
                             due,

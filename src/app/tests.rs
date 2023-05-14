@@ -74,109 +74,119 @@ fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
     std::fs::remove_file(actual_file).unwrap();
 }
 
-fn assert_screenshot(expected_file_name: &str, window_size: (i32, i32), ctx: impl FnMut(&Context)) {
-    assert_screenshot_after_n_frames(expected_file_name, window_size, 1, ctx)
-}
-
-fn assert_screenshot_after_n_frames(
-    expected_file_name: &str,
-    window_size: (i32, i32),
-    n: usize,
-    mut ctx: impl FnMut(&Context),
-) {
-    let RasterizeOptions { pixels_per_point } = Default::default();
-    let mut backend = EguiSkia::new();
-
-    let mut surface =
-        Surface::new_raster_n32_premul(window_size).expect("Failed to create surface");
-    let input = egui::RawInput {
-        screen_rect: Some(
-            [
-                Pos2::default(),
-                Pos2::new(surface.width() as f32, surface.height() as f32),
-            ]
-            .into(),
-        ),
-        pixels_per_point: Some(pixels_per_point),
-        ..Default::default()
-    };
-
-    for _ in 0..n {
-        backend.run(input.clone(), &mut ctx);
-    }
-
-    backend.paint(surface.canvas());
-    assert_eq_screenshot(expected_file_name, &mut surface);
-}
-
 static INIT: Once = Once::new();
 
-pub fn set_timezone_once() {
-    INIT.call_once(|| std::env::set_var("TZ", "CET"));
+pub struct TestBackend {
+    backend: EguiSkia,
+    pub app: TaskPickerApp,
+}
+
+impl TestBackend {
+    pub fn new(app: TaskPickerApp) -> Self {
+        INIT.call_once(|| std::env::set_var("TZ", "CET"));
+        let backend = EguiSkia::default();
+        app.init_with_egui_context(&backend.egui_ctx);
+        TestBackend { backend, app }
+    }
+
+    pub fn assert_screenshot_after_n_frames(
+        &mut self,
+        expected_file_name: &str,
+        window_size: (i32, i32),
+        n: usize,
+    ) {
+        let RasterizeOptions { pixels_per_point } = Default::default();
+
+        let mut surface =
+            Surface::new_raster_n32_premul(window_size).expect("Failed to create surface");
+        let input = egui::RawInput {
+            screen_rect: Some(
+                [
+                    Pos2::default(),
+                    Pos2::new(surface.width() as f32, surface.height() as f32),
+                ]
+                .into(),
+            ),
+            pixels_per_point: Some(pixels_per_point),
+            ..Default::default()
+        };
+
+        for _ in 0..n {
+            self.backend.run(input.clone(), |ctx| {
+                CentralPanel::default().show(ctx, |_ui| {
+                    self.app.render(ctx);
+                });
+            });
+        }
+
+        self.backend.paint(surface.canvas());
+        assert_eq_screenshot(expected_file_name, &mut surface);
+    }
 }
 
 #[test]
 fn test_render_single_task_with_description() {
-    set_timezone_once();
-    assert_screenshot("single_task_with_description.png", (250, 300), |ctx| {
-        CentralPanel::default().show(ctx, |ui| {
-            let mut app = TaskPickerApp::default();
+    let now = Utc.with_ymd_and_hms(2022, 03, 19, 17, 42, 00).unwrap();
+    let mut app = TaskPickerApp::default();
 
-            let task = Task {
-                project: "family".to_string(),
-                title: "Buy presents".to_string(),
-                description: "They should be surprising.\n\nBut not that surprising!".to_string(),
-                due: Some(Utc.with_ymd_and_hms(2022, 12, 24, 20, 0, 0).unwrap()),
-                created: Some(Utc.with_ymd_and_hms(2022, 09, 1, 12, 24, 30).unwrap()),
-                id: None,
-            };
+    app.settings.dark_mode = true;
+    app.overwrite_current_time = Some(now);
 
-            app.render_single_task(
-                ui,
-                task,
-                Utc.with_ymd_and_hms(2022, 12, 1, 10, 0, 0).unwrap(),
-            );
-        });
-    });
+    let task = Task {
+        project: format!("{} family", CALDAV_ICON),
+        title: "Buy presents".to_string(),
+        description: "They should be surprising.\n\nBut not that surprising!".to_string(),
+        due: Some(Utc.with_ymd_and_hms(2022, 12, 24, 20, 0, 0).unwrap()),
+        created: Some(Utc.with_ymd_and_hms(2022, 09, 1, 12, 24, 30).unwrap()),
+        id: None,
+    };
+    app.task_manager.expect_tasks().return_const(vec![task]);
+    app.task_manager.expect_sources().return_const(vec![]);
+    app.task_manager.expect_refresh().return_const(());
+
+    let mut backend = TestBackend::new(app);
+    backend.assert_screenshot_after_n_frames("single_task_with_description.png", (800, 600), 5);
 }
 
 #[test]
 fn test_render_task_grid() {
-    set_timezone_once();
-    assert_screenshot_after_n_frames("task_grid.png", (600, 500), 2, |ctx| {
-        let now = Utc.with_ymd_and_hms(2023, 03, 19, 17, 42, 00).unwrap();
+    let now = Utc.with_ymd_and_hms(2023, 03, 19, 17, 42, 00).unwrap();
+    let mut app = TaskPickerApp::default();
+    app.settings.dark_mode = false;
+    app.overwrite_current_time = Some(now);
 
-        let task_relaxed = Task {
-            project: "project".to_string(),
-            title: "Far away".to_string(),
-            description: "http://example.com".to_string(),
-            due: now.checked_add_days(Days::new(20)),
-            created: now.checked_sub_days(Days::new(10)),
-            id: Some("task_relaxed".to_string()),
-        };
-        let task_due_tomorrow = Task {
-            project: "project".to_string(),
-            title: "Due Tomorrow".to_string(),
-            description: "http://example.com".to_string(),
-            due: Some(Utc.with_ymd_and_hms(2023, 03, 20, 20, 42, 00).unwrap()),
-            created: now.checked_sub_days(Days::new(10)),
-            id: Some("task_due_tomorrow".to_string()),
-        };
+    let task_relaxed = Task {
+        project: "project".to_string(),
+        title: "Far away".to_string(),
+        description: "http://example.com".to_string(),
+        due: now.checked_add_days(Days::new(20)),
+        created: now.checked_sub_days(Days::new(10)),
+        id: Some("task_relaxed".to_string()),
+    };
+    let task_due_tomorrow = Task {
+        project: "project".to_string(),
+        title: "Due Tomorrow".to_string(),
+        description: "http://example.com".to_string(),
+        due: Some(Utc.with_ymd_and_hms(2023, 03, 20, 20, 42, 00).unwrap()),
+        created: now.checked_sub_days(Days::new(10)),
+        id: Some("task_due_tomorrow".to_string()),
+    };
 
-        let task_due_today = Task {
-            project: "project".to_string(),
-            title: "Due Today".to_string(),
-            description: "http://example.com".to_string(),
-            due: Some(Utc.with_ymd_and_hms(2023, 03, 19, 19, 42, 00).unwrap()),
-            created: now.checked_sub_days(Days::new(10)),
-            id: Some("task_due_today".to_string()),
-        };
-        let mut app = TaskPickerApp::default();
-        app.settings.dark_mode = false;
-        let tasks = vec![task_due_today, task_due_tomorrow, task_relaxed];
+    let task_due_today = Task {
+        project: "project".to_string(),
+        title: "Due Today".to_string(),
+        description: "http://example.com".to_string(),
+        due: Some(Utc.with_ymd_and_hms(2023, 03, 19, 19, 42, 00).unwrap()),
+        created: now.checked_sub_days(Days::new(10)),
+        id: Some("task_due_today".to_string()),
+    };
 
-        CentralPanel::default().show(ctx, |ui| {
-            app.render_all_tasks(tasks, ui, now);
-        });
-    });
+    let tasks = vec![task_due_today, task_due_tomorrow, task_relaxed];
+
+    app.task_manager.expect_tasks().return_const(tasks);
+    app.task_manager.expect_sources().return_const(vec![]);
+    app.task_manager.expect_refresh().return_const(());
+
+    let mut backend = TestBackend::new(app);
+    backend.assert_screenshot_after_n_frames("task_grid.png", (800, 600), 2);
 }

@@ -3,7 +3,9 @@ use std::time::{Duration, Instant};
 #[double]
 use crate::tasks::TaskManager;
 use crate::{
-    sources::{CalDavSource, GitHubSource, GitLabSource, TaskSource},
+    sources::{
+        CalDavSource, GitHubSource, GitLabSource, TaskSource, CALDAV_ICON, GITHUB_ICON, GITLAB_ICON,
+    },
     tasks::Task,
 };
 use chrono::prelude::*;
@@ -53,6 +55,8 @@ pub struct TaskPickerApp {
     existing_edit_source: bool,
     #[serde(skip)]
     connection_error_for_source: HashSet<String>,
+    #[serde(skip)]
+    overwrite_current_time: Option<DateTime<Utc>>,
 }
 
 impl Default for TaskPickerApp {
@@ -69,6 +73,7 @@ impl Default for TaskPickerApp {
             messages: Toasts::default(),
             existing_edit_source: false,
             connection_error_for_source: HashSet::default(),
+            overwrite_current_time: None,
         }
     }
 }
@@ -87,13 +92,21 @@ impl TaskPickerApp {
             TaskPickerApp::default()
         };
 
-        if app.settings.dark_mode {
-            cc.egui_ctx.set_visuals(Visuals::dark());
-        } else {
-            cc.egui_ctx.set_visuals(Visuals::light());
-        }
+        app.init_with_egui_context(&cc.egui_ctx);
 
         app
+    }
+
+    pub fn init_with_egui_context(&self, ctx: &egui::Context) {
+        if self.settings.dark_mode {
+            ctx.set_visuals(Visuals::dark());
+        } else {
+            ctx.set_visuals(Visuals::light());
+        }
+
+        let mut fonts = egui::FontDefinitions::default();
+        egui_phosphor::add_to_fonts(&mut fonts);
+        ctx.set_fonts(fonts);
     }
 
     fn edit_source(&mut self, ctx: &egui::Context) {
@@ -227,7 +240,7 @@ impl TaskPickerApp {
                     }
                 }
                 ui.heading(task.title.as_str().truncate_ellipse(80));
-                ui.label(task.project.as_str());
+                ui.label(egui::RichText::new(task.project));
 
                 if let Some(due_utc) = &task.due {
                     // Convert to local time for display
@@ -264,7 +277,9 @@ impl TaskPickerApp {
         });
     }
 
-    fn render_all_tasks(&mut self, all_tasks: Vec<Task>, ui: &mut Ui, now: DateTime<Utc>) {
+    fn render_all_tasks(&mut self, all_tasks: Vec<Task>, ui: &mut Ui) {
+        let now = self.overwrite_current_time.unwrap_or_else(Utc::now);
+
         let box_width_with_spacing = BOX_WIDTH + (2.0 * ui.style().spacing.item_spacing.x);
         let ratio = (ui.available_width() - 5.0) / (box_width_with_spacing);
         let columns = (ratio.floor() as usize).max(1);
@@ -307,17 +322,8 @@ impl TaskPickerApp {
             self.messages.add(msg);
         }
     }
-}
 
-impl eframe::App for TaskPickerApp {
-    /// Called by the frame work to save state before shutdown.
-    fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
-    }
-
-    /// Called each time the UI needs repainting, which may be many times per second.
-    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    pub fn render(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
                 ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
@@ -355,8 +361,13 @@ impl eframe::App for TaskPickerApp {
                 for i in 0..self.task_manager.sources().len() {
                     let (s, enabled) = &mut self.task_manager.source_ref_mut(i);
                     let source_name = s.name();
+                    let source_icon = s.icon();
+
                     ui.horizontal(|ui| {
-                        let source_checkbox = ui.checkbox(enabled, source_name);
+                        let source_checkbox = ui.checkbox(
+                            enabled,
+                            egui::RichText::new(format!("{source_icon} {source_name}")),
+                        );
                         if source_checkbox.changed() {
                             refresh = true;
                         }
@@ -394,15 +405,24 @@ impl eframe::App for TaskPickerApp {
                 ui.label("Add source");
 
                 ui.horizontal_wrapped(|ui| {
-                    if ui.button("CalDAV").clicked() {
+                    if ui
+                        .button(egui::RichText::new(format!("{} CalDAV", CALDAV_ICON)))
+                        .clicked()
+                    {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::CalDav(CalDavSource::default()));
                     }
-                    if ui.button("GitHub").clicked() {
+                    if ui
+                        .button(egui::RichText::new(format!("{} GitHub", GITHUB_ICON)))
+                        .clicked()
+                    {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::GitHub(GitHubSource::default()));
                     }
-                    if ui.button("GitLab").clicked() {
+                    if ui
+                        .button(egui::RichText::new(format!("{} GitLab", GITLAB_ICON)))
+                        .clicked()
+                    {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::GitLab(GitLabSource::default()));
                     }
@@ -415,12 +435,18 @@ impl eframe::App for TaskPickerApp {
             ui.horizontal(|ui| {
                 ui.heading("Tasks");
 
-                if ui.button("Refresh").clicked() {
+                if ui
+                    .button(egui::RichText::new(format!(
+                        "{} Refresh",
+                        egui_phosphor::ARROWS_CLOCKWISE
+                    )))
+                    .clicked()
+                {
                     self.trigger_refresh(true, ctx.clone());
                 }
             });
             ScrollArea::vertical().show(ui, |ui| {
-                self.render_all_tasks(self.task_manager.tasks(), ui, Utc::now())
+                self.render_all_tasks(self.task_manager.tasks(), ui)
             });
         });
 
@@ -461,6 +487,19 @@ impl eframe::App for TaskPickerApp {
 
         // Make sure we will be called after the refresh rate has been expired
         ctx.request_repaint_after(Duration::from_secs(self.settings.refresh_rate_seconds));
+    }
+}
+
+impl eframe::App for TaskPickerApp {
+    /// Called by the frame work to save state before shutdown.
+    fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        eframe::set_value(storage, eframe::APP_KEY, self);
+    }
+
+    /// Called each time the UI needs repainting, which may be many times per second.
+    /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.render(ctx);
     }
 }
 

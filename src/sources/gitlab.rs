@@ -6,6 +6,8 @@ use ureq::Agent;
 
 use crate::tasks::Task;
 
+use super::GITLAB_ICON;
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct GitLabSource {
@@ -71,7 +73,7 @@ impl GitLabSource {
                     .map(|d| d.into());
 
                 let task = Task {
-                    project: project.to_string(),
+                    project: format!("{} {}", GITLAB_ICON, project),
                     title: title.to_string(),
                     description: url.to_string(),
                     due,

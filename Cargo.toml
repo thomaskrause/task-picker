@@ -23,6 +23,7 @@ minicaldav = "0.7"
 rayon = "1.7.0"
 ureq = "2.5"
 url = "2"
+egui-phosphor = "0.1.0"
 
 # You only need serde if you want app persistence:
 chrono = {version = "0.4.24", default-features = false, features = ["std", "clock", "serde"]}
