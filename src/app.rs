@@ -1,8 +1,10 @@
 use std::time::{Duration, Instant};
 
+#[double]
+use crate::tasks::TaskManager;
 use crate::{
     sources::{CalDavSource, GitHubSource, GitLabSource, TaskSource},
-    tasks::{Task, TaskManager},
+    tasks::Task,
 };
 use chrono::prelude::*;
 use eframe::epaint::ahash::HashSet;
@@ -14,6 +16,7 @@ use ellipse::Ellipse;
 use itertools::Itertools;
 use log::error;
 use minicaldav::Error;
+use mockall_double::double;
 use ureq::ErrorKind;
 
 const BOX_WIDTH: f32 = 220.0;
@@ -182,9 +185,9 @@ impl TaskPickerApp {
         });
     }
 
-    fn render_single_task(&mut self, ui: &mut Ui, task: Task) {
+    fn render_single_task(&mut self, ui: &mut Ui, task: Task, now: DateTime<Utc>) {
         let mut group = egui::Frame::group(ui.style());
-        let overdue = task.due.filter(|d| d.cmp(&Utc::now()).is_le()).is_some();
+        let overdue = task.due.filter(|d| d.cmp(&now).is_le()).is_some();
         if Some(task.get_id()) == self.selected_task {
             group.fill = ui.visuals().selection.bg_fill;
         } else if overdue {
@@ -224,7 +227,6 @@ impl TaskPickerApp {
                     }
                 }
                 ui.heading(task.title.as_str().truncate_ellipse(80));
-
                 ui.label(task.project.as_str());
 
                 if let Some(due_utc) = &task.due {
@@ -237,7 +239,7 @@ impl TaskPickerApp {
                         // If the task is overdue, the background
                         // already be red, an no further highlight
                         // is necessary.
-                        let hours_to_finish = due_utc.signed_duration_since(Utc::now()).num_hours();
+                        let hours_to_finish = due_utc.signed_duration_since(now).num_hours();
                         if hours_to_finish < 24 {
                             due_label = due_label.color(ui.visuals().error_fg_color);
                         } else if hours_to_finish < 48 {
@@ -262,12 +264,11 @@ impl TaskPickerApp {
         });
     }
 
-    fn render_all_tasks(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
+    fn render_all_tasks(&mut self, all_tasks: Vec<Task>, ui: &mut Ui, now: DateTime<Utc>) {
         let box_width_with_spacing = BOX_WIDTH + (2.0 * ui.style().spacing.item_spacing.x);
         let ratio = (ui.available_width() - 5.0) / (box_width_with_spacing);
         let columns = (ratio.floor() as usize).max(1);
 
-        let all_tasks = self.task_manager.tasks();
         // Check that the selection is valid and unselect if the task does not
         // exists
         if let Some(selection) = self.selected_task.clone() {
@@ -283,7 +284,7 @@ impl TaskPickerApp {
                 // Get all tasks for all active source
                 let mut task_counter = 0;
                 for task in all_tasks {
-                    self.render_single_task(ui, task);
+                    self.render_single_task(ui, task, now);
                     task_counter += 1;
                     if task_counter % columns == 0 {
                         ui.end_row();
@@ -418,7 +419,9 @@ impl eframe::App for TaskPickerApp {
                     self.trigger_refresh(true, ctx.clone());
                 }
             });
-            ScrollArea::vertical().show(ui, |ui| self.render_all_tasks(ctx, ui));
+            ScrollArea::vertical().show(ui, |ui| {
+                self.render_all_tasks(self.task_manager.tasks(), ui, Utc::now())
+            });
         });
 
         if self.edit_source.is_some() {
@@ -472,3 +475,6 @@ fn is_dns_error(err: &anyhow::Error) -> bool {
         false
     }
 }
+
+#[cfg(test)]
+mod tests;

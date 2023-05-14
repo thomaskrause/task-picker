@@ -18,18 +18,11 @@ to add additional options, e.g. for different types of scheduling. If you need a
 full-fledged task planner, I can recommend the great [Super
 Productivity](https://super-productivity.com/).
 
-Also, there are no automatic tests yet and basically testing it means the
+Also, there are almost no automatic tests yet and basically testing it means the
 features I use are tested manually, but everything else might break easily.
 **You should expect breaking changes during updates, e.g. like losing the task
 source configuration.** Given more time in the future™ I might add automatic
-tests and this would allow more features to be added. For testing the interface
-itself, a custom [egui
-integration](https://github.com/emilk/egui#writing-your-own-egui-integration)
-that renders to a PNG file (e.g. using
-[tiny-skia](https://crates.io/crates/tiny-skia)) and comparing the output using
-[insta snapshot testing](https://insta.rs/) would be possible in theory.
-
-
+tests and this would allow more features to be added.
 
 ## Sources for tasks
 
