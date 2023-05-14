@@ -1,4 +1,4 @@
-use std::{io::Write, path::PathBuf, vec};
+use std::{path::PathBuf, vec};
 
 use chrono::Days;
 use egui::{CentralPanel, Pos2};
@@ -20,16 +20,16 @@ fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
     output_file.push("src/app/tests/expected");
     output_file.push(expected_file_name);
 
-    // Write out the screenshot as temporary file
-    let actual_file = tempfile::NamedTempFile::new().unwrap();
+    // Write out the screenshot to a file that is removed if test ist successful
+    let mut actual_file =  PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    actual_file.push("src/app/tests/actual");
+    std::fs::create_dir_all(&actual_file).unwrap();
+    actual_file.push(expected_file_name);
     let actual_image_skia = surface.image_snapshot();
     let skia_data = actual_image_skia
         .encode_to_data(skia_safe::EncodedImageFormat::PNG)
         .unwrap();
-    actual_file
-        .as_file()
-        .write_all(skia_data.as_bytes())
-        .unwrap();
+    std::fs::write(&actual_file, skia_data.as_bytes()).unwrap();
 
     if std::env::var("UPDATE_EXPECT").is_ok() {
         // Write current snapshot to to expected path
@@ -40,13 +40,13 @@ fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
     }
 
     // Read in expected image from file
-    let expected_image = image::io::Reader::open(output_file)
+    let expected_image = image::io::Reader::open(&output_file)
         .unwrap()
         .with_guessed_format()
         .unwrap()
         .decode()
         .unwrap();
-    let actual_image = image::io::Reader::open(actual_file)
+    let actual_image = image::io::Reader::open(&actual_file)
         .unwrap()
         .with_guessed_format()
         .unwrap()
@@ -60,6 +60,9 @@ fn assert_eq_screenshot(expected_file_name: &str, surface: &mut Surface) {
 
     let dist = actual_hash.dist(&expected_hash);
     assert_eq!(0, dist);
+
+    // Remove the created file
+    std::fs::remove_file(actual_file).unwrap();
 }
 
 fn assert_screenshot(expected_file_name: &str, window_size: (i32, i32), ctx: impl FnMut(&Context)) {
