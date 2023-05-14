@@ -1,4 +1,7 @@
-on: [push, pull_request]
+on:
+  push:
+  merge_group:
+
 
 name: CI
 
@@ -28,11 +31,21 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: sudo apt-get install libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y libxcb-render0-dev libxcb-shape0-dev libxcb-xfixes0-dev libxkbcommon-dev libssl-dev
       - uses: actions-rs/cargo@v1
         with:
           command: test
           args: --lib
+      - name: Archive screenshots for failed UI tests
+        uses: actions/upload-artifact@v3
+        if: ${{ always() }}
+        with:
+          name: actual-screenshots
+          path: |
+            src/app/tests/actual
+          retention-days: 5
+          if-no-files-found: ignore
 
   fmt:
     name: Rustfmt

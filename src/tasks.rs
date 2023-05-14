@@ -5,6 +5,10 @@ use std::{
 
 use chrono::{DateTime, Utc};
 use eframe::epaint::ahash::HashMap;
+#[cfg(test)]
+use mockall::mock;
+#[cfg(test)]
+use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 
 use crate::sources::TaskSource;
@@ -49,6 +53,44 @@ fn compare_optional<T: Ord>(a: &Option<T>, b: &Option<T>) -> Ordering {
         }
     } else {
         Ordering::Less
+    }
+}
+
+#[cfg(test)]
+mock! {
+    pub TaskManager {
+        pub fn tasks(&self) -> Vec<Task>;
+
+        pub fn add_or_replace_source(&mut self, source: TaskSource);
+        pub fn remove_source(&mut self, idx: usize) -> (TaskSource, bool);
+        pub fn refresh<F>(&mut self, finish_callback: F)
+        where
+            F: FnOnce() + Send + 'static;
+        pub fn sources(&self) -> &Vec<(TaskSource, bool)>;
+        pub fn source_ref_mut(&mut self, idx: usize) -> &mut (TaskSource, bool);
+        pub fn get_and_clear_last_err(&self, source: &str) -> Option<anyhow::Error>;
+
+        fn private_deserialize(deserializable: Result<TaskManager, ()>) -> Self;
+        fn private_serialize(&self) -> TaskManager;
+
+    }
+}
+
+#[cfg(test)]
+impl serde::Serialize for MockTaskManager {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        self.private_serialize().serialize(s)
+    }
+}
+
+#[cfg(test)]
+impl<'de> Deserialize<'de> for MockTaskManager {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let serializable = TaskManager::deserialize(deserializer).map_err(|_| ());
+        Ok(MockTaskManager::private_deserialize(serializable))
     }
 }
 
