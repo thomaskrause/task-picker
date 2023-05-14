@@ -278,7 +278,7 @@ impl TaskPickerApp {
     }
 
     fn render_all_tasks(&mut self, all_tasks: Vec<Task>, ui: &mut Ui) {
-        let now = self.overwrite_current_time.unwrap_or_else(|| Utc::now());
+        let now = self.overwrite_current_time.unwrap_or_else(Utc::now);
 
         let box_width_with_spacing = BOX_WIDTH + (2.0 * ui.style().spacing.item_spacing.x);
         let ratio = (ui.available_width() - 5.0) / (box_width_with_spacing);
