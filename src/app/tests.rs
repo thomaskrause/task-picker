@@ -1,4 +1,4 @@
-use std::{path::PathBuf, vec, sync::Once};
+use std::{path::PathBuf, sync::Once, vec};
 
 use chrono::Days;
 use egui::{CentralPanel, Pos2};
@@ -109,15 +109,11 @@ fn assert_screenshot_after_n_frames(
     assert_eq_screenshot(expected_file_name, &mut surface);
 }
 
-
 static INIT: Once = Once::new();
 
 pub fn set_timezone_once() {
-    INIT.call_once(|| {
-        std::env::set_var("TZ", "CET")
-    });
+    INIT.call_once(|| std::env::set_var("TZ", "CET"));
 }
-
 
 #[test]
 fn test_render_single_task_with_description() {
