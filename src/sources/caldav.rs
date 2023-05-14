@@ -9,6 +9,8 @@ use url::Url;
 
 use crate::tasks::Task;
 
+use super::CALDAV_ICON;
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct CalDavSource {
@@ -108,7 +110,7 @@ impl CalDavSource {
                                 .transpose()?;
 
                             let task = Task {
-                                project: c.name().clone(),
+                                project: format!("{} {}", CALDAV_ICON, c.name()),
                                 title: title.clone(),
                                 description,
                                 due: due.map(DateTime::<Utc>::from),

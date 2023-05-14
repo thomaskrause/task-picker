@@ -231,7 +231,7 @@ impl TaskPickerApp {
                     }
                 }
                 ui.heading(task.title.as_str().truncate_ellipse(80));
-                ui.label(task.project.as_str());
+                ui.label(egui::RichText::new(task.project));
 
                 if let Some(due_utc) = &task.due {
                     // Convert to local time for display
