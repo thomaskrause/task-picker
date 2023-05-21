@@ -93,7 +93,6 @@ impl TaskPickerApp {
         };
 
         app.init_with_egui_context(&cc.egui_ctx);
-
         app
     }
 
