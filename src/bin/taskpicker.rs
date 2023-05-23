@@ -20,10 +20,8 @@ fn main() -> eframe::Result<()> {
             rgba: icon.into_raw(),
         };
         native_options.icon_data = Some(icon_data);
-        #[cfg(target_os = "linux")]
-        {
-            native_options.app_id = Some("taskpicker".to_string());
-        }
+        native_options.app_id = Some("taskpicker".to_string());
+        
     }
     eframe::run_native(
         "Task Picker",
