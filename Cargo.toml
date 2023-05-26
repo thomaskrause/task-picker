@@ -46,6 +46,9 @@ skia-safe = "0.62.0"
 tempfile = "3"
 visual-hash = "3"
 
+[patch.crates-io]
+egui-notify = {git = "https://github.com/ItsEthra/egui-notify.git"}
+
 [[bin]]
 name = "taskpicker"
 
