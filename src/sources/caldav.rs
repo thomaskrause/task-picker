@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use chrono::{format::ParseErrorKind, prelude::*};
 
 use serde::{Deserialize, Serialize};
@@ -46,9 +46,16 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
         Err(e) => {
             if e.kind() == ParseErrorKind::TooShort {
                 // Try without a timezone and intepret it as local
-                let result_local = DateTime::parse_from_str(data, DATE_TIME_FORMAT)?;
-                let result_utc: DateTime<Utc> = DateTime::from(result_local);
-                Ok(result_utc)
+                let result_local = NaiveDateTime::parse_from_str(data, DATE_TIME_FORMAT)?
+                    .and_local_timezone(Local);
+                match result_local {
+                    chrono::offset::LocalResult::Single(result_local) => Ok(result_local.into()),
+
+                    chrono::offset::LocalResult::Ambiguous(earliest, _) => Ok(earliest.into()),
+                    chrono::offset::LocalResult::None => {
+                        Err(anyhow!("The local time {:#?} does not exist", result_local))
+                    }
+                }
             } else {
                 Err(e.into())
             }
