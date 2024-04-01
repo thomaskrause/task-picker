@@ -2,7 +2,6 @@ use std::{path::PathBuf, sync::Once, vec};
 
 use chrono::Days;
 use egui_screenshot_testing::TestBackend;
-use mockall::predicate::*;
 use serde::Serialize;
 
 use super::*;
@@ -86,7 +85,9 @@ fn test_render_task_grid() {
     app.task_manager.expect_sources().return_const(vec![]);
     app.task_manager.expect_refresh().return_const(());
 
-    let mut backend = TestBackend::new("src/app/tests/expected", "src/app/tests/actual", |_ctx| {});
+    let mut backend = TestBackend::new("src/app/tests/expected", "src/app/tests/actual", |ctx| {
+        app.init_with_egui_context(ctx)
+    });
     backend.assert_screenshot_after_n_frames("task_grid.png", (800, 600), 2, |ctx| {
         app.render(ctx);
     });

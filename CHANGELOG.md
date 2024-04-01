@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added logos of the providers to the source and task list
+- Updated to egui 0.26.2
 
 ## [0.3.0] - 2023-04-26
 
