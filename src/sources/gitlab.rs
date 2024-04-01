@@ -64,7 +64,7 @@ impl GitLabSource {
                     .map(|due_date| NaiveDate::parse_from_str(due_date, "%Y-%m-%d"))
                     .transpose()?
                     .and_then(|due_date| due_date.and_hms_opt(0, 0, 0))
-                    .map(|due_date| DateTime::<Utc>::from_utc(due_date, Utc));
+                    .map(|due_date| DateTime::from_naive_utc_and_offset(due_date, Utc));
 
                 let created: Option<DateTime<Utc>> = todo["created_at"]
                     .as_str()

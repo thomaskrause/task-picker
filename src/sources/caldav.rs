@@ -46,7 +46,7 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
         Err(e) => {
             if e.kind() == ParseErrorKind::TooShort {
                 // Try without a timezone and intepret it as local
-                let result_local = Local.datetime_from_str(data, DATE_TIME_FORMAT)?;
+                let result_local = DateTime::parse_from_str(data, DATE_TIME_FORMAT)?;
                 let result_utc: DateTime<Utc> = DateTime::from(result_local);
                 Ok(result_utc)
             } else {
