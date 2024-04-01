@@ -332,11 +332,7 @@ impl TaskPickerApp {
                 let style: Style = (*ui.ctx().style()).clone();
                 let new_visuals = style.visuals.light_dark_small_toggle_button(ui);
                 if let Some(visuals) = new_visuals {
-                    if visuals.dark_mode {
-                        self.settings.dark_mode = true;
-                    } else {
-                        self.settings.dark_mode = false;
-                    }
+                    self.settings.dark_mode = visuals.dark_mode;
                     ui.ctx().set_visuals(visuals);
                 }
 
