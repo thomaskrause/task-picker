@@ -8,9 +8,9 @@ pub use gitlab::GitLabSource;
 
 use serde::{Deserialize, Serialize};
 
-pub const CALDAV_ICON: &str = egui_phosphor::CALENDAR;
-pub const GITHUB_ICON: &str = egui_phosphor::GITHUB_LOGO;
-pub const GITLAB_ICON: &str = egui_phosphor::GITLAB_LOGO;
+pub const CALDAV_ICON: &str = egui_phosphor::regular::CALENDAR;
+pub const GITHUB_ICON: &str = egui_phosphor::regular::GITHUB_LOGO;
+pub const GITLAB_ICON: &str = egui_phosphor::regular::GITLAB_LOGO;
 
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone)]

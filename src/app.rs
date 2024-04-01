@@ -104,8 +104,8 @@ impl TaskPickerApp {
             ctx.set_visuals(Visuals::light());
         }
 
-        let mut fonts = egui::FontDefinitions::default();
-        egui_phosphor::add_to_fonts(&mut fonts);
+        let mut fonts = egui::epaint::text::FontDefinitions::default();
+        egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
         ctx.set_fonts(fonts);
     }
 
@@ -332,11 +332,7 @@ impl TaskPickerApp {
                 let style: Style = (*ui.ctx().style()).clone();
                 let new_visuals = style.visuals.light_dark_small_toggle_button(ui);
                 if let Some(visuals) = new_visuals {
-                    if visuals.dark_mode {
-                        self.settings.dark_mode = true;
-                    } else {
-                        self.settings.dark_mode = false;
-                    }
+                    self.settings.dark_mode = visuals.dark_mode;
                     ui.ctx().set_visuals(visuals);
                 }
 
@@ -438,7 +434,7 @@ impl TaskPickerApp {
                 if ui
                     .button(egui::RichText::new(format!(
                         "{} Refresh",
-                        egui_phosphor::ARROWS_CLOCKWISE
+                        egui_phosphor::regular::ARROWS_CLOCKWISE
                     )))
                     .clicked()
                 {
