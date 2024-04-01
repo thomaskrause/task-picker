@@ -1,7 +1,7 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use eframe::IconData;
+use egui::{IconData, ViewportBuilder};
 
 fn main() -> eframe::Result<()> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
@@ -19,8 +19,9 @@ fn main() -> eframe::Result<()> {
             height: icon.height(),
             rgba: icon.into_raw(),
         };
-        native_options.icon_data = Some(icon_data);
-        native_options.app_id = Some("taskpicker".to_string());
+        native_options.viewport = ViewportBuilder::default()
+            .with_app_id("taskpicker")
+            .with_icon(icon_data);
     }
     eframe::run_native(
         "Task Picker",

@@ -104,8 +104,8 @@ impl TaskPickerApp {
             ctx.set_visuals(Visuals::light());
         }
 
-        let mut fonts = egui::FontDefinitions::default();
-        egui_phosphor::add_to_fonts(&mut fonts);
+        let mut fonts = egui::epaint::text::FontDefinitions::default();
+        egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
         ctx.set_fonts(fonts);
     }
 
@@ -438,7 +438,7 @@ impl TaskPickerApp {
                 if ui
                     .button(egui::RichText::new(format!(
                         "{} Refresh",
-                        egui_phosphor::ARROWS_CLOCKWISE
+                        egui_phosphor::regular::ARROWS_CLOCKWISE
                     )))
                     .clicked()
                 {
