@@ -1101,7 +1101,8 @@ dependencies = [
 [[package]]
 name = "egui-screenshot-testing"
 version = "0.2.0"
-source = "git+https://github.com/thomaskrause/egui-screenshot-testing.git#6f806661b118ace9264351b778fe743cc45c05c4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8f8d92ba284d6b1bc60d4e8aa4f347e267299258f92e4c1eaf18f6da0be87f1"
 dependencies = [
  "egui",
  "image",
