@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap};
 
 use anyhow::{anyhow, Result};
 use chrono::{format::ParseErrorKind, prelude::*};
@@ -35,6 +35,7 @@ impl Default for CalDavSource {
 }
 
 const DATE_TIME_FORMAT: &str = "%Y%m%dT%H%M%S";
+const DATE_ONLY_FORMAT: &str = "%Y%m%d";
 const DATE_TIME_FORMAT_WITH_TZ: &str = "%Y%m%dT%H%M%S%#z";
 
 fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
@@ -46,9 +47,18 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
         Err(e) => {
             if e.kind() == ParseErrorKind::TooShort {
                 // Try without a timezone and intepret it as local
-                let result_local = NaiveDateTime::parse_from_str(data, DATE_TIME_FORMAT)?
-                    .and_local_timezone(Local);
-                match result_local {
+                let result_local =
+                    NaiveDateTime::parse_from_str(data, DATE_TIME_FORMAT).or_else(|e| {
+                        // This could be only a date without a time
+                        if e.kind() == ParseErrorKind::TooShort {
+                            let date = NaiveDate::parse_from_str(data, DATE_ONLY_FORMAT)?;
+                            let end_of_day = NaiveTime::from_hms_opt(23, 59, 59).unwrap_or_default();
+                            Ok(date.and_time(end_of_day))
+                        } else {
+                            Err(e)
+                        }
+                    })?;
+                match result_local.and_local_timezone(Local) {
                     chrono::offset::LocalResult::Single(result_local) => Ok(result_local.into()),
 
                     chrono::offset::LocalResult::Ambiguous(earliest, _) => Ok(earliest.into()),
@@ -177,3 +187,6 @@ fn unescape(val: &str) -> String {
 
     unescaped
 }
+
+#[cfg(test)]
+mod tests;
