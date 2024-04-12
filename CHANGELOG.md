@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Updated to minicaldav 0.8.0
+
+### Fixed 
+
+- Parse CalDAV local dates without a time
+
 ## [0.4.0] - 2024-04-02
 
 ### Added

@@ -35,6 +35,7 @@ impl Default for CalDavSource {
 }
 
 const DATE_TIME_FORMAT: &str = "%Y%m%dT%H%M%S";
+const DATE_ONLY_FORMAT: &str = "%Y%m%d";
 const DATE_TIME_FORMAT_WITH_TZ: &str = "%Y%m%dT%H%M%S%#z";
 
 fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
@@ -46,9 +47,19 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
         Err(e) => {
             if e.kind() == ParseErrorKind::TooShort {
                 // Try without a timezone and intepret it as local
-                let result_local = NaiveDateTime::parse_from_str(data, DATE_TIME_FORMAT)?
-                    .and_local_timezone(Local);
-                match result_local {
+                let result_local =
+                    NaiveDateTime::parse_from_str(data, DATE_TIME_FORMAT).or_else(|e| {
+                        // This could be only a date without a time
+                        if e.kind() == ParseErrorKind::TooShort {
+                            let date = NaiveDate::parse_from_str(data, DATE_ONLY_FORMAT)?;
+                            let end_of_day =
+                                NaiveTime::from_hms_opt(23, 59, 59).unwrap_or_default();
+                            Ok(date.and_time(end_of_day))
+                        } else {
+                            Err(e)
+                        }
+                    })?;
+                match result_local.and_local_timezone(Local) {
                     chrono::offset::LocalResult::Single(result_local) => Ok(result_local.into()),
 
                     chrono::offset::LocalResult::Ambiguous(earliest, _) => Ok(earliest.into()),
@@ -57,7 +68,7 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
                     }
                 }
             } else {
-                Err(e.into())
+                Err(anyhow::Error::from(e).context(format!("Could not parse CalDAV date '{data}'")))
             }
         }
     }
@@ -66,17 +77,13 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
 impl CalDavSource {
     pub fn query_tasks(&self) -> Result<Vec<Task>> {
         let base_url = Url::parse(&self.base_url)?;
-        let calendars = minicaldav::get_calendars(
-            self.agent.clone(),
-            &self.username,
-            &self.password,
-            &base_url,
-        )?;
+        let credentials =
+            minicaldav::Credentials::Basic(self.username.clone(), self.password.clone());
+        let calendars = minicaldav::get_calendars(self.agent.clone(), &credentials, &base_url)?;
         let mut result = Vec::default();
         for c in calendars {
             if c.name().as_str() == self.calendar_name {
-                let (todos, _errors) =
-                    minicaldav::get_todos(self.agent.clone(), &self.username, &self.password, &c)?;
+                let (todos, _errors) = minicaldav::get_todos(self.agent.clone(), &credentials, &c)?;
                 for t in todos {
                     let props: HashMap<String, String> = t
                         .properties_todo()
@@ -181,3 +188,6 @@ fn unescape(val: &str) -> String {
 
     unescaped
 }
+
+#[cfg(test)]
+mod tests;
