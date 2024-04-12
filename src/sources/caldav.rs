@@ -57,7 +57,7 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
                     }
                 }
             } else {
-                Err(e.into())
+                Err(anyhow::Error::from(e).context(format!("Could not parse CalDAV date '{data}'")))
             }
         }
     }
@@ -66,17 +66,13 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
 impl CalDavSource {
     pub fn query_tasks(&self) -> Result<Vec<Task>> {
         let base_url = Url::parse(&self.base_url)?;
-        let calendars = minicaldav::get_calendars(
-            self.agent.clone(),
-            &self.username,
-            &self.password,
-            &base_url,
-        )?;
+        let credentials =
+            minicaldav::Credentials::Basic(self.username.clone(), self.password.clone());
+        let calendars = minicaldav::get_calendars(self.agent.clone(), &credentials, &base_url)?;
         let mut result = Vec::default();
         for c in calendars {
             if c.name().as_str() == self.calendar_name {
-                let (todos, _errors) =
-                    minicaldav::get_todos(self.agent.clone(), &self.username, &self.password, &c)?;
+                let (todos, _errors) = minicaldav::get_todos(self.agent.clone(), &credentials, &c)?;
                 for t in todos {
                     let props: HashMap<String, String> = t
                         .properties_todo()
