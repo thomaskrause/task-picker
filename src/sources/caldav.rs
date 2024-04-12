@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
 use chrono::{format::ParseErrorKind, prelude::*};
@@ -52,7 +52,8 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
                         // This could be only a date without a time
                         if e.kind() == ParseErrorKind::TooShort {
                             let date = NaiveDate::parse_from_str(data, DATE_ONLY_FORMAT)?;
-                            let end_of_day = NaiveTime::from_hms_opt(23, 59, 59).unwrap_or_default();
+                            let end_of_day =
+                                NaiveTime::from_hms_opt(23, 59, 59).unwrap_or_default();
                             Ok(date.and_time(end_of_day))
                         } else {
                             Err(e)
