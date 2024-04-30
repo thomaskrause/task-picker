@@ -4,7 +4,8 @@ use std::time::{Duration, Instant};
 use crate::tasks::TaskManager;
 use crate::{
     sources::{
-        CalDavSource, GitHubSource, GitLabSource, OpenProjectSource, TaskSource, CALDAV_ICON, GITHUB_ICON, GITLAB_ICON, OPENPROJECT_ICON
+        CalDavSource, GitHubSource, GitLabSource, OpenProjectSource, TaskSource, CALDAV_ICON,
+        GITHUB_ICON, GITLAB_ICON, OPENPROJECT_ICON,
     },
     tasks::Task,
 };
@@ -445,11 +446,15 @@ impl TaskPickerApp {
                         self.edit_source = Some(TaskSource::GitLab(GitLabSource::default()));
                     }
                     if ui
-                        .button(egui::RichText::new(format!("{} OpenProject", OPENPROJECT_ICON)))
+                        .button(egui::RichText::new(format!(
+                            "{} OpenProject",
+                            OPENPROJECT_ICON
+                        )))
                         .clicked()
                     {
                         self.existing_edit_source = false;
-                        self.edit_source = Some(TaskSource::OpenProject(OpenProjectSource::default()));
+                        self.edit_source =
+                            Some(TaskSource::OpenProject(OpenProjectSource::default()));
                     }
                 });
             });
