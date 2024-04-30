@@ -1,10 +1,12 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use base64::prelude::*;
 use json::{array, JsonValue};
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
 
 use crate::tasks::Task;
+
+use super::OPENPROJECT_ICON;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(default)]
@@ -30,6 +32,31 @@ impl Default for OpenProjectSource {
 }
 
 impl OpenProjectSource {
+    fn create_task(&self, work_package: &JsonValue) -> Result<Task> {
+        if let JsonValue::Object(work_package) = work_package {
+            let title = work_package["subject"].as_str().unwrap_or("<unknown>");
+            let id = work_package["id"]
+                .as_i64()
+                .context("'id' field in response is not an integer")?;
+            let url = format!("{}/work_packages/{id}/activity", self.server_url);
+
+            let project = work_package["_links"]["project"]["title"].to_string();
+
+            // TODO: extract time information and description
+            let t = Task {
+                project: format!("{} {}", OPENPROJECT_ICON, project),
+                title: title.to_string(),
+                description: url,
+                due: None,
+                created: None,
+                id: Some(id.to_string()),
+            };
+            Ok(t)
+        } else {
+            Err(anyhow!("Response is not a JSON object"))
+        }
+    }
+
     pub fn query_tasks(&self) -> Result<Vec<Task>> {
         let mut result = Vec::default();
 
@@ -52,34 +79,12 @@ impl OpenProjectSource {
         let response = request.call()?;
         let body = response.into_string()?;
 
-        if let JsonValue::Object(work_package_collection) = json::parse(&body)? {
-            if let Some(JsonValue::Object(embedded)) = work_package_collection.get("_embedded") {
-                if let Some(JsonValue::Array(elements)) = embedded.get("elements") {
-                    for e in elements {
-                        if let JsonValue::Object(e) = e {
-                            let title = e
-                                .get("subject")
-                                .and_then(|subject| subject.as_str())
-                                .unwrap_or("<unknown>");
-                            let id = e
-                                .get("id")
-                                .context("Missing 'id' field in response.")?
-                                .as_i64()
-                                .context("'id' field in response is not an integer")?;
-                            let url = format!("{}/work_packages/{id}/activity", self.server_url);
-                            // TODO: extract time information and description
-                            let t = Task {
-                                project: self.name.clone(),
-                                title: title.to_string(),
-                                description: url,
-                                due: None,
-                                created: None,
-                                id: Some(id.to_string()),
-                            };
-                            result.push(t);
-                        }
-                    }
-                }
+        let work_package_collection = json::parse(&body)?;
+
+        if let JsonValue::Array(elements) = &work_package_collection["_embedded"]["elements"] {
+            for e in elements {
+                let task = self.create_task(e)?;
+                result.push(task);
             }
         }
 
