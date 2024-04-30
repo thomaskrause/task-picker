@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Context, Result};
 use base64::prelude::*;
+use chrono::{DateTime, Local, NaiveDate, Utc};
 use json::{array, JsonValue};
 use serde::{Deserialize, Serialize};
 use ureq::Agent;
@@ -32,7 +33,7 @@ impl Default for OpenProjectSource {
 }
 
 impl OpenProjectSource {
-    fn create_task(&self, work_package: &JsonValue) -> Result<Task> {
+    fn create_task(&self, work_package: &JsonValue) -> Result<Option<Task>> {
         if let JsonValue::Object(work_package) = work_package {
             let title = work_package["subject"].as_str().unwrap_or("<unknown>");
             let id = work_package["id"]
@@ -42,16 +43,47 @@ impl OpenProjectSource {
 
             let project = work_package["_links"]["project"]["title"].to_string();
 
-            // TODO: extract time information and description
-            let t = Task {
-                project: format!("{} {}", OPENPROJECT_ICON, project),
-                title: title.to_string(),
-                description: url,
-                due: None,
-                created: None,
-                id: Some(id.to_string()),
+            let created = if let Some(c) = work_package["createdAt"].as_str() {
+                let created_utc: DateTime<Utc> = DateTime::parse_from_rfc3339(c)?.into();
+                Some(created_utc)
+            } else {
+                None
             };
-            Ok(t)
+
+            let start: Option<DateTime<Utc>> = work_package["startDate"]
+                .as_str()
+                .map(|due_date| NaiveDate::parse_from_str(due_date, "%Y-%m-%d"))
+                .transpose()?
+                .and_then(|due_date| due_date.and_hms_opt(0, 0, 0))
+                .map(|due_date| DateTime::from_naive_utc_and_offset(due_date, Utc));
+
+            let can_start = if let Some(start) = start {
+                let start: DateTime<Local> = DateTime::from(start);
+                Local::now().cmp(&start).is_ge()
+            } else {
+                true
+            };
+
+            if can_start {
+                let due: Option<DateTime<Utc>> = work_package["dueDate"]
+                    .as_str()
+                    .map(|due_date| NaiveDate::parse_from_str(due_date, "%Y-%m-%d"))
+                    .transpose()?
+                    .and_then(|due_date| due_date.and_hms_opt(0, 0, 0))
+                    .map(|due_date| DateTime::from_naive_utc_and_offset(due_date, Utc));
+
+                let t = Task {
+                    project: format!("{} {}", OPENPROJECT_ICON, project),
+                    title: title.to_string(),
+                    description: url,
+                    due,
+                    created,
+                    id: Some(id.to_string()),
+                };
+                Ok(Some(t))
+            } else {
+                Ok(None)
+            }
         } else {
             Err(anyhow!("Response is not a JSON object"))
         }
@@ -83,8 +115,9 @@ impl OpenProjectSource {
 
         if let JsonValue::Array(elements) = &work_package_collection["_embedded"]["elements"] {
             for e in elements {
-                let task = self.create_task(e)?;
-                result.push(task);
+                if let Some(task) = self.create_task(e)? {
+                    result.push(task);
+                }
             }
         }
 
