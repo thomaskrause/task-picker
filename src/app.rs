@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use crate::tasks::TaskManager;
 use crate::{
     sources::{
-        CalDavSource, GitHubSource, GitLabSource, TaskSource, CALDAV_ICON, GITHUB_ICON, GITLAB_ICON,
+        CalDavSource, GitHubSource, GitLabSource, OpenProjectSource, TaskSource, CALDAV_ICON, GITHUB_ICON, GITLAB_ICON, OPENPROJECT_ICON
     },
     tasks::Task,
 };
@@ -175,6 +175,28 @@ impl TaskPickerApp {
                         ui.horizontal(|ui| {
                             ui.label("User ID");
                             ui.text_edit_singleline(&mut source.user_name);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("API Token");
+                            ui.text_edit_singleline(&mut source.token);
+                        });
+                    }
+                    TaskSource::OpenProject(source) => {
+                        ui.horizontal(|ui| {
+                            ui.label("Name");
+                            if self.existing_edit_source {
+                                ui.label(&source.name);
+                            } else {
+                                ui.text_edit_singleline(&mut source.name);
+                            }
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("Server URL");
+                            ui.text_edit_singleline(&mut source.server_url);
+                        });
+                        ui.horizontal(|ui| {
+                            ui.label("User ID");
+                            ui.text_edit_singleline(&mut source.user_id);
                         });
                         ui.horizontal(|ui| {
                             ui.label("API Token");
@@ -421,6 +443,13 @@ impl TaskPickerApp {
                     {
                         self.existing_edit_source = false;
                         self.edit_source = Some(TaskSource::GitLab(GitLabSource::default()));
+                    }
+                    if ui
+                        .button(egui::RichText::new(format!("{} OpenProject", OPENPROJECT_ICON)))
+                        .clicked()
+                    {
+                        self.existing_edit_source = false;
+                        self.edit_source = Some(TaskSource::OpenProject(OpenProjectSource::default()));
                     }
                 });
             });

@@ -115,6 +115,7 @@ impl TaskManager {
                         TaskSource::CalDav(s) => s.query_tasks(),
                         TaskSource::GitHub(s) => s.query_tasks(),
                         TaskSource::GitLab(s) => s.query_tasks(),
+                        TaskSource::OpenProject(s) => s.query_tasks(),
                     };
                     match tasks_for_source {
                         Ok(tasks_for_source) => new_tasks.extend(tasks_for_source),
