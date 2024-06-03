@@ -29,8 +29,8 @@ tests and this would allow more features to be added.
 Currently, the following task/issue trackers are supported:
 
 - CalDAV, 
-- GitHub and 
-- GitLab 
+- GitHub,
+- GitLab and
 - OpenProject
 
 All support due dates, but for GitHub issues have to be part of a milestone with
