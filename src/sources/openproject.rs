@@ -92,13 +92,35 @@ impl OpenProjectSource {
     pub fn query_tasks(&self) -> Result<Vec<Task>> {
         let mut result = Vec::default();
 
-        // TODO: make the type and status configurable.
+        let basic_auth = format!("apikey:{}", &self.token);
+
+        // Query all statuses that count as "closed".
+        let request = self
+            .agent
+            .get(&format!("{}/api/v3/statuses", self.server_url))
+            .set(
+                "Authorization",
+                &format!("Basic {}", &BASE64_STANDARD.encode(basic_auth.clone())),
+            );
+        let response = request.call()?;
+        let body = response.into_string()?;
+        let closed_statuses =
+            if let JsonValue::Array(elements) = &json::parse(&body)?["_embedded"]["elements"] {
+                elements
+                    .into_iter()
+                    .filter(|e| e["isClosed"].as_bool().unwrap_or(false))
+                    .filter_map(|e| e["id"].as_usize())
+                    .collect()
+            } else {
+                Vec::default()
+            };
+
+        // Filter by work packages that are assigned to the use and are not closed
         let filter_param = array! [
             {"assignee": {"operator": "=", "values": [self.user_id.clone()]}},
             {"type": {"operator": "=", "values": [1]}},
-            {"status": {"operator": "!", "values": [12]}}
+            {"status": {"operator": "!", "values": closed_statuses.clone()}}
         ];
-        let basic_auth = format!("apikey:{}", &self.token);
 
         let request = self
             .agent
