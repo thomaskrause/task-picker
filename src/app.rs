@@ -200,10 +200,6 @@ impl TaskPickerApp {
                             ui.label("API Token");
                             ui.text_edit_singleline(&mut source.token);
                         });
-                        ui.horizontal(|ui| {
-                            ui.label("User ID");
-                            ui.text_edit_singleline(&mut source.user_id);
-                        });
                     }
                 }
                 ui.horizontal(|ui| {

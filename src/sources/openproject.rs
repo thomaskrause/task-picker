@@ -16,7 +16,6 @@ pub struct OpenProjectSource {
     agent: Agent,
     pub name: String,
     pub server_url: String,
-    pub user_id: String,
     pub token: String,
 }
 
@@ -26,7 +25,6 @@ impl Default for OpenProjectSource {
             agent: Agent::new(),
             name: "OpenProject".to_string(),
             server_url: "https://community.openproject.org".to_string(),
-            user_id: String::default(),
             token: Default::default(),
         }
     }
@@ -107,7 +105,7 @@ impl OpenProjectSource {
         let closed_statuses =
             if let JsonValue::Array(elements) = &json::parse(&body)?["_embedded"]["elements"] {
                 elements
-                    .into_iter()
+                    .iter()
                     .filter(|e| e["isClosed"].as_bool().unwrap_or(false))
                     .filter_map(|e| e["id"].as_usize())
                     .collect()
@@ -115,9 +113,21 @@ impl OpenProjectSource {
                 Vec::default()
             };
 
+        // Get the user ID for the provided acccess token
+        let request = self
+            .agent
+            .get(&format!("{}/api/v3/users/me", self.server_url))
+            .set(
+                "Authorization",
+                &format!("Basic {}", &BASE64_STANDARD.encode(basic_auth.clone())),
+            );
+        let response = request.call()?;
+        let body = response.into_string()?;
+
+        let user_id = json::parse(&body)?["id"].as_usize().unwrap_or(0);
         // Filter by work packages that are assigned to the use and are not closed
         let filter_param = array! [
-            {"assignee": {"operator": "=", "values": [self.user_id.clone()]}},
+            {"assignee": {"operator": "=", "values": [user_id]}},
             {"type": {"operator": "=", "values": [1]}},
             {"status": {"operator": "!", "values": closed_statuses.clone()}}
         ];
