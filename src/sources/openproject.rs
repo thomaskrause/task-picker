@@ -142,7 +142,6 @@ impl OpenProjectSource {
             );
         let response = request.call()?;
         let body = response.into_string()?;
-
         let work_package_collection = json::parse(&body)?;
 
         if let JsonValue::Array(elements) = &work_package_collection["_embedded"]["elements"] {
@@ -156,3 +155,6 @@ impl OpenProjectSource {
         Ok(result)
     }
 }
+
+#[cfg(test)]
+mod tests;
