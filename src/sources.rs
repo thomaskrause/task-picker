@@ -1,16 +1,19 @@
 mod caldav;
 mod github;
 mod gitlab;
+mod openproject;
 
 pub use caldav::CalDavSource;
 pub use github::GitHubSource;
 pub use gitlab::GitLabSource;
+pub use openproject::OpenProjectSource;
 
 use serde::{Deserialize, Serialize};
 
 pub const CALDAV_ICON: &str = egui_phosphor::regular::CALENDAR;
 pub const GITHUB_ICON: &str = egui_phosphor::regular::GITHUB_LOGO;
 pub const GITLAB_ICON: &str = egui_phosphor::regular::GITLAB_LOGO;
+pub const OPENPROJECT_ICON: &str = egui_phosphor::regular::INFINITY;
 
 #[non_exhaustive]
 #[derive(Serialize, Deserialize, Clone)]
@@ -18,6 +21,7 @@ pub enum TaskSource {
     CalDav(CalDavSource),
     GitHub(GitHubSource),
     GitLab(GitLabSource),
+    OpenProject(OpenProjectSource),
 }
 
 impl TaskSource {
@@ -26,6 +30,7 @@ impl TaskSource {
             TaskSource::CalDav(s) => s.calendar_name.as_str(),
             TaskSource::GitHub(s) => s.name.as_str(),
             TaskSource::GitLab(s) => s.name.as_str(),
+            TaskSource::OpenProject(s) => s.name.as_str(),
         }
     }
 
@@ -34,6 +39,7 @@ impl TaskSource {
             TaskSource::CalDav(_) => "CalDAV",
             TaskSource::GitHub(_) => "GitHub",
             TaskSource::GitLab(_) => "GitLab",
+            TaskSource::OpenProject(_) => "OpenProject",
         }
     }
 
@@ -42,6 +48,7 @@ impl TaskSource {
             TaskSource::CalDav(_) => CALDAV_ICON,
             TaskSource::GitHub(_) => GITHUB_ICON,
             TaskSource::GitLab(_) => GITLAB_ICON,
+            TaskSource::OpenProject(_) => OPENPROJECT_ICON,
         }
     }
 }

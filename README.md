@@ -13,7 +13,7 @@ This is a desktop application using the <https://www.egui.rs/> GUI framework.
 ## Status of the project
 
 This is a personal hobby project and I want to keep the scope of this project
-very limited. Feature-wise, this project fulfills my needs and it is not planned
+very limited. Feature-wise, this project fulfills my needs, and it is not planned
 to add additional options, e.g. for different types of scheduling. If you need a
 full-fledged task planner, I can recommend the great [Super
 Productivity](https://super-productivity.com/).
@@ -31,9 +31,10 @@ Currently, the following task/issue trackers are supported:
 - CalDAV, 
 - GitHub and 
 - GitLab 
+- OpenProject
 
-All support due dates, but for GitHub issues  have to be part of a milestone
-with a due date. GitHub and GitLab issues are only displayed when the
+All support due dates, but for GitHub issues have to be part of a milestone with
+a due date. GitHub, GitLab and OpenProject issues are only displayed when the
 authenticated user is assigned to them.
 
 ## Display of tasks

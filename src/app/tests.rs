@@ -1,15 +1,9 @@
-use std::{path::PathBuf, sync::Once, vec};
+use std::{sync::Once, vec};
 
 use chrono::Days;
 use egui_screenshot_testing::TestBackend;
-use serde::Serialize;
 
 use super::*;
-
-#[derive(Serialize)]
-struct Info {
-    actual_file: PathBuf,
-}
 
 static INIT: Once = Once::new();
 
@@ -34,7 +28,9 @@ fn test_render_single_task_with_description() {
     app.task_manager.expect_sources().return_const(vec![]);
     app.task_manager.expect_refresh().return_const(());
 
-    let mut backend = TestBackend::new("src/app/tests/expected", "src/app/tests/actual", |_ctx| {});
+    let mut backend = TestBackend::new("src/app/tests/expected", "src/app/tests/actual", |ctx| {
+        app.init_with_egui_context(ctx)
+    });
     backend.assert_screenshot_after_n_frames(
         "single_task_with_description.png",
         (800, 600),
