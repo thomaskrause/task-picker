@@ -38,6 +38,7 @@ tracing-subscriber = "0.3"
 
 mockall_double = "0.3"
 base64 = "0.22.0"
+keyring = "2.3.3"
 
 [dev-dependencies]
 egui-screenshot-testing = {version = "0.3.1"}
