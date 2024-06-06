@@ -98,8 +98,8 @@ impl<'de> Deserialize<'de> for MockTaskManager {
 
 /// Store a secret for a source in the keyring
 fn save_password(source_name: &str, secret: &str) -> Result<()> {
-    let keyring_entry = Entry::new("task-picker", &source_name)?;
-    keyring_entry.set_password(secret.into())?;
+    let keyring_entry = Entry::new("task-picker", source_name)?;
+    keyring_entry.set_password(secret)?;
     Ok(())
 }
 
