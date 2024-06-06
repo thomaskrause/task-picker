@@ -55,15 +55,8 @@ impl TaskSource {
 
     /// Returns the secret (e.g. a password or a token) for this task source.
     pub fn secret(&self) -> Option<String> {
-        match self {
-            TaskSource::CalDav(_) => {
-                let keyring_entry = Entry::new("task-picker", self.name()).ok()?;
-                let secret = keyring_entry.get_password().ok()?;
-                Some(secret)
-            }
-            TaskSource::GitHub(s) => Some(s.token.to_string()),
-            TaskSource::GitLab(s) => Some(s.token.to_string()),
-            TaskSource::OpenProject(s) => Some(s.token.to_string()),
-        }
+        let keyring_entry = Entry::new("task-picker", self.name()).ok()?;
+        let secret = keyring_entry.get_password().ok()?;
+        Some(secret)
     }
 }

@@ -15,14 +15,12 @@ pub struct GitHubSource {
     agent: ureq::Agent,
     pub name: String,
     pub server_url: String,
-    pub token: String,
 }
 
 impl Default for GitHubSource {
     fn default() -> Self {
         Self {
             agent: Agent::new(),
-            token: Default::default(),
             name: "GitHub".to_string(),
             server_url: "https://api.github.com".to_string(),
         }

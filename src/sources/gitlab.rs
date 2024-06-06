@@ -16,7 +16,6 @@ pub struct GitLabSource {
     pub name: String,
     pub server_url: String,
     pub user_name: String,
-    pub token: String,
 }
 
 impl Default for GitLabSource {
@@ -26,7 +25,6 @@ impl Default for GitLabSource {
             name: "GitLab".to_string(),
             server_url: "https://gitlab.com/api/v4/".to_string(),
             user_name: Default::default(),
-            token: Default::default(),
         }
     }
 }

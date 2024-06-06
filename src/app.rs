@@ -166,7 +166,10 @@ impl TaskPickerApp {
                         });
                         ui.horizontal(|ui| {
                             ui.label("API Token");
-                            ui.text_edit_singleline(&mut source.token);
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                     TaskSource::GitLab(source) => {
@@ -188,7 +191,10 @@ impl TaskPickerApp {
                         });
                         ui.horizontal(|ui| {
                             ui.label("API Token");
-                            ui.text_edit_singleline(&mut source.token);
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                     TaskSource::OpenProject(source) => {
@@ -207,7 +213,10 @@ impl TaskPickerApp {
 
                         ui.horizontal(|ui| {
                             ui.label("API Token");
-                            ui.text_edit_singleline(&mut source.token);
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                 }

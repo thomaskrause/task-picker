@@ -16,7 +16,6 @@ pub struct OpenProjectSource {
     agent: Agent,
     pub name: String,
     pub server_url: String,
-    pub token: String,
 }
 
 impl Default for OpenProjectSource {
@@ -25,7 +24,6 @@ impl Default for OpenProjectSource {
             agent: Agent::new(),
             name: "OpenProject".to_string(),
             server_url: "https://community.openproject.org".to_string(),
-            token: Default::default(),
         }
     }
 }
