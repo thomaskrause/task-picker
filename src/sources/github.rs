@@ -29,7 +29,10 @@ impl Default for GitHubSource {
     }
 }
 impl GitHubSource {
-    pub fn query_tasks(&self, secret: Option<&str>) -> Result<Vec<Task>> {
+    pub fn query_tasks<S>(&self, secret: Option<S>) -> Result<Vec<Task>>
+    where
+        S: AsRef<str>,
+    {
         let mut result = Vec::default();
 
         let mut request = self
@@ -38,7 +41,7 @@ impl GitHubSource {
             .set("X-GitHub-Api-Version", "2022-11-28")
             .set("Accept", "application/vnd.github+json");
         if let Some(secret) = secret {
-            request = request.set("Authorization", &format!("Bearer {}", secret))
+            request = request.set("Authorization", &format!("Bearer {}", secret.as_ref()))
         }
         let response = request.call()?;
         let body = response.into_string()?;

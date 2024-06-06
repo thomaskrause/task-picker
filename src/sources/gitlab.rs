@@ -32,12 +32,15 @@ impl Default for GitLabSource {
 }
 
 impl GitLabSource {
-    fn query_todos(&self, secret: Option<&str>) -> Result<Vec<Task>> {
+    fn query_todos<S>(&self, secret: Option<S>) -> Result<Vec<Task>>
+    where
+        S: AsRef<str>,
+    {
         let mut request = self
             .agent
             .get(&format!("{}/todos?state=pending", self.server_url,));
         if let Some(secret) = secret {
-            request = request.set("PRIVATE-TOKEN", secret);
+            request = request.set("PRIVATE-TOKEN", secret.as_ref());
         }
         let response = request.call()?;
         let body = response.into_string()?;
@@ -88,7 +91,10 @@ impl GitLabSource {
         Ok(result)
     }
 
-    pub fn query_tasks(&self, secret: Option<&str>) -> Result<Vec<Task>> {
+    pub fn query_tasks<S>(&self, secret: Option<S>) -> Result<Vec<Task>>
+    where
+        S: AsRef<str>,
+    {
         let mut result = Vec::default();
 
         let todos = self.query_todos(secret)?;

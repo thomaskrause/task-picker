@@ -18,7 +18,6 @@ pub struct CalDavSource {
     agent: ureq::Agent,
     pub calendar_name: String,
     pub username: String,
-    pub password: String,
     pub base_url: String,
 }
 
@@ -28,7 +27,6 @@ impl Default for CalDavSource {
             agent: Agent::new(),
             calendar_name: String::default(),
             username: String::default(),
-            password: String::default(),
             base_url: String::default(),
         }
     }
@@ -75,14 +73,13 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
 }
 
 impl CalDavSource {
-    pub fn query_tasks(&self, secret: Option<&str>) -> Result<Vec<Task>> {
+    pub fn query_tasks<S>(&self, secret: Option<S>) -> Result<Vec<Task>>
+    where
+        S: Into<String>,
+    {
         let base_url = Url::parse(&self.base_url)?;
-        let credentials = minicaldav::Credentials::Basic(
-            self.username.clone(),
-            secret
-                .ok_or_else(|| anyhow!("Missing passwort for CalDAV source"))?
-                .to_string(),
-        );
+        let secret = secret.ok_or_else(|| anyhow!("Missing passwort for CalDAV source"))?;
+        let credentials = minicaldav::Credentials::Basic(self.username.clone(), secret.into());
         let calendars = minicaldav::get_calendars(self.agent.clone(), &credentials, &base_url)?;
         let mut result = Vec::default();
         for c in calendars {

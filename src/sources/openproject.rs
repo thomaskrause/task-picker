@@ -87,10 +87,13 @@ impl OpenProjectSource {
         }
     }
 
-    pub fn query_tasks(&self, secret: Option<&str>) -> Result<Vec<Task>> {
+    pub fn query_tasks<S>(&self, secret: Option<S>) -> Result<Vec<Task>>
+    where
+        S: AsRef<str>,
+    {
         let mut result = Vec::default();
 
-        let basic_auth = secret.map(|secret| format!("apikey:{}", &secret));
+        let basic_auth = secret.map(|secret| format!("apikey:{}", secret.as_ref()));
 
         // Query all statuses that count as "closed".
         let mut request = self

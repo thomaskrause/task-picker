@@ -6,6 +6,7 @@ mod openproject;
 pub use caldav::CalDavSource;
 pub use github::GitHubSource;
 pub use gitlab::GitLabSource;
+use keyring::Entry;
 pub use openproject::OpenProjectSource;
 
 use serde::{Deserialize, Serialize};
@@ -53,12 +54,16 @@ impl TaskSource {
     }
 
     /// Returns the secret (e.g. a password or a token) for this task source.
-    pub fn secret(&self) -> Option<&str> {
+    pub fn secret(&self) -> Option<String> {
         match self {
-            TaskSource::CalDav(s) => Some(&s.password),
-            TaskSource::GitHub(s) => Some(&s.token),
-            TaskSource::GitLab(s) => Some(&s.token),
-            TaskSource::OpenProject(s) => Some(&s.token),
+            TaskSource::CalDav(_) => {
+                let keyring_entry = Entry::new("task-picker", self.name()).ok()?;
+                let secret = keyring_entry.get_password().ok()?;
+                Some(secret)
+            }
+            TaskSource::GitHub(s) => Some(s.token.to_string()),
+            TaskSource::GitLab(s) => Some(s.token.to_string()),
+            TaskSource::OpenProject(s) => Some(s.token.to_string()),
         }
     }
 }

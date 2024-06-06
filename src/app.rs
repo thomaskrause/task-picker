@@ -53,6 +53,8 @@ pub struct TaskPickerApp {
     #[serde(skip)]
     edit_source: Option<TaskSource>,
     #[serde(skip)]
+    currently_edited_secret: String,
+    #[serde(skip)]
     existing_edit_source: bool,
     #[serde(skip)]
     connection_error_for_source: HashSet<String>,
@@ -71,6 +73,7 @@ impl Default for TaskPickerApp {
                 .unwrap_or_else(Instant::now),
             settings,
             edit_source: None,
+            currently_edited_secret: String::default(),
             messages: Toasts::default(),
             existing_edit_source: false,
             connection_error_for_source: HashSet::default(),
@@ -139,7 +142,10 @@ impl TaskPickerApp {
                         });
                         ui.horizontal(|ui| {
                             ui.label("Password");
-                            ui.add(TextEdit::singleline(&mut source.password).password(true));
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                     TaskSource::GitHub(source) => {
@@ -205,9 +211,13 @@ impl TaskPickerApp {
                 ui.horizontal(|ui| {
                     if ui.button("Save").clicked() {
                         if let Some(source) = &self.edit_source {
-                            self.task_manager.add_or_replace_source(source.clone());
+                            self.task_manager.add_or_replace_source(
+                                source.clone(),
+                                &self.currently_edited_secret,
+                            );
                         }
                         self.edit_source = None;
+                        self.currently_edited_secret.clear();
                         self.trigger_refresh(true, ctx.clone());
                     }
                     if ui.button("Discard").clicked() {

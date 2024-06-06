@@ -3,8 +3,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use anyhow::Result;
 use chrono::{DateTime, Utc};
 use eframe::epaint::ahash::HashMap;
+use keyring::Entry;
 #[cfg(test)]
 use mockall::mock;
 #[cfg(test)]
@@ -61,7 +63,7 @@ mock! {
     pub TaskManager {
         pub fn tasks(&self) -> Vec<Task>;
 
-        pub fn add_or_replace_source(&mut self, source: TaskSource);
+        pub fn add_or_replace_source(&mut self, source: TaskSource, secret: &str);
         pub fn remove_source(&mut self, idx: usize) -> (TaskSource, bool);
         pub fn refresh<F>(&mut self, finish_callback: F)
         where
@@ -92,6 +94,13 @@ impl<'de> Deserialize<'de> for MockTaskManager {
         let serializable = TaskManager::deserialize(deserializer).map_err(|_| ());
         Ok(MockTaskManager::private_deserialize(serializable))
     }
+}
+
+/// Store a secret for a source in the keyring
+fn save_password(source_name: &str, secret: &str) -> Result<()> {
+    let keyring_entry = Entry::new("task-picker", &source_name)?;
+    keyring_entry.set_password(secret.into())?;
+    Ok(())
 }
 
 impl TaskManager {
@@ -167,7 +176,8 @@ impl TaskManager {
 
     /// Adds a new resource or replaces an existing one if a source with the
     /// same name already exists.
-    pub fn add_or_replace_source(&mut self, source: TaskSource) {
+    pub fn add_or_replace_source(&mut self, source: TaskSource, secret: &str) {
+        let source_name = source.name().to_string();
         let existing = self
             .sources
             .binary_search_by(|(probe, _)| probe.name().cmp(source.name()));
@@ -175,6 +185,11 @@ impl TaskManager {
             Ok(i) => self.sources[i].0 = source,
             Err(i) => self.sources.insert(i, (source, true)),
         };
+
+        if let Err(e) = save_password(&source_name, secret) {
+            let mut error_by_source = self.error_by_source.lock().expect("Lock poisoning");
+            error_by_source.insert(source_name, e);
+        }
     }
 
     pub fn remove_source(&mut self, idx: usize) -> (TaskSource, bool) {
