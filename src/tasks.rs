@@ -111,11 +111,12 @@ impl TaskManager {
             let mut new_errors = HashMap::default();
             for (source, active) in &sources {
                 if *active {
+                    let secret = source.secret();
                     let tasks_for_source = match source {
-                        TaskSource::CalDav(s) => s.query_tasks(),
-                        TaskSource::GitHub(s) => s.query_tasks(),
-                        TaskSource::GitLab(s) => s.query_tasks(),
-                        TaskSource::OpenProject(s) => s.query_tasks(),
+                        TaskSource::CalDav(s) => s.query_tasks(secret),
+                        TaskSource::GitHub(s) => s.query_tasks(secret),
+                        TaskSource::GitLab(s) => s.query_tasks(secret),
+                        TaskSource::OpenProject(s) => s.query_tasks(secret),
                     };
                     match tasks_for_source {
                         Ok(tasks_for_source) => new_tasks.extend(tasks_for_source),

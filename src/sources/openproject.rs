@@ -87,19 +87,21 @@ impl OpenProjectSource {
         }
     }
 
-    pub fn query_tasks(&self) -> Result<Vec<Task>> {
+    pub fn query_tasks(&self, secret: Option<&str>) -> Result<Vec<Task>> {
         let mut result = Vec::default();
 
-        let basic_auth = format!("apikey:{}", &self.token);
+        let basic_auth = secret.map(|secret| format!("apikey:{}", &secret));
 
         // Query all statuses that count as "closed".
-        let request = self
+        let mut request = self
             .agent
-            .get(&format!("{}/api/v3/statuses", self.server_url))
-            .set(
+            .get(&format!("{}/api/v3/statuses", self.server_url));
+        if let Some(basic_auth) = &basic_auth {
+            request = request.set(
                 "Authorization",
                 &format!("Basic {}", &BASE64_STANDARD.encode(basic_auth.clone())),
-            );
+            )
+        }
         let response = request.call()?;
         let body = response.into_string()?;
         let closed_statuses =
@@ -114,13 +116,15 @@ impl OpenProjectSource {
             };
 
         // Get the user ID for the provided acccess token
-        let request = self
+        let mut request = self
             .agent
-            .get(&format!("{}/api/v3/users/me", self.server_url))
-            .set(
+            .get(&format!("{}/api/v3/users/me", self.server_url));
+        if let Some(basic_auth) = &basic_auth {
+            request = request.set(
                 "Authorization",
                 &format!("Basic {}", &BASE64_STANDARD.encode(basic_auth.clone())),
-            );
+            )
+        }
         let response = request.call()?;
         let body = response.into_string()?;
 
@@ -132,14 +136,16 @@ impl OpenProjectSource {
             {"status": {"operator": "!", "values": closed_statuses.clone()}}
         ];
 
-        let request = self
+        let mut request = self
             .agent
             .get(&format!("{}/api/v3/work_packages", self.server_url))
-            .query("filters", &filter_param.to_string())
-            .set(
+            .query("filters", &filter_param.to_string());
+        if let Some(basic_auth) = &basic_auth {
+            request = request.set(
                 "Authorization",
-                &format!("Basic {}", &BASE64_STANDARD.encode(basic_auth)),
-            );
+                &format!("Basic {}", &BASE64_STANDARD.encode(basic_auth.clone())),
+            )
+        }
         let response = request.call()?;
         let body = response.into_string()?;
         let work_package_collection = json::parse(&body)?;

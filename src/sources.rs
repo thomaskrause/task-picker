@@ -51,4 +51,14 @@ impl TaskSource {
             TaskSource::OpenProject(_) => OPENPROJECT_ICON,
         }
     }
+
+    /// Returns the secret (e.g. a password or a token) for this task source.
+    pub fn secret(&self) -> Option<&str> {
+        match self {
+            TaskSource::CalDav(s) => Some(&s.password),
+            TaskSource::GitHub(s) => Some(&s.token),
+            TaskSource::GitLab(s) => Some(&s.token),
+            TaskSource::OpenProject(s) => Some(&s.token),
+        }
+    }
 }

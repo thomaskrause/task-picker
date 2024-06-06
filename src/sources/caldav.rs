@@ -75,10 +75,14 @@ fn parse_caldav_date(data: &str) -> Result<DateTime<Utc>> {
 }
 
 impl CalDavSource {
-    pub fn query_tasks(&self) -> Result<Vec<Task>> {
+    pub fn query_tasks(&self, secret: Option<&str>) -> Result<Vec<Task>> {
         let base_url = Url::parse(&self.base_url)?;
-        let credentials =
-            minicaldav::Credentials::Basic(self.username.clone(), self.password.clone());
+        let credentials = minicaldav::Credentials::Basic(
+            self.username.clone(),
+            secret
+                .ok_or_else(|| anyhow!("Missing passwort for CalDAV source"))?
+                .to_string(),
+        );
         let calendars = minicaldav::get_calendars(self.agent.clone(), &credentials, &base_url)?;
         let mut result = Vec::default();
         for c in calendars {
