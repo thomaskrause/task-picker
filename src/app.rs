@@ -60,6 +60,8 @@ pub struct TaskPickerApp {
     connection_error_for_source: HashSet<String>,
     #[serde(skip)]
     overwrite_current_time: Option<DateTime<Utc>>,
+    #[serde(skip)]
+    app_version: String,
 }
 
 impl Default for TaskPickerApp {
@@ -78,6 +80,7 @@ impl Default for TaskPickerApp {
             existing_edit_source: false,
             connection_error_for_source: HashSet::default(),
             overwrite_current_time: None,
+            app_version: env!("CARGO_PKG_VERSION").to_string(),
         }
     }
 }
@@ -357,7 +360,7 @@ impl TaskPickerApp {
     pub fn render(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
-                ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+                ui.label(format!("Version {}", self.app_version));
                 ui.separator();
 
                 let style: Style = (*ui.ctx().style()).clone();

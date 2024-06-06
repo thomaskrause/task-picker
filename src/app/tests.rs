@@ -15,6 +15,7 @@ fn test_render_single_task_with_description() {
 
     app.settings.dark_mode = true;
     app.overwrite_current_time = Some(now);
+    app.app_version = "0.0.0".to_string();
 
     let task = Task {
         project: format!("{} family", CALDAV_ICON),
@@ -48,6 +49,7 @@ fn test_render_task_grid() {
     let mut app = TaskPickerApp::default();
     app.settings.dark_mode = false;
     app.overwrite_current_time = Some(now);
+    app.app_version = "0.0.0".to_string();
 
     let task_relaxed = Task {
         project: "project".to_string(),
