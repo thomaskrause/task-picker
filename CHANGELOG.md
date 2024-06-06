@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2024-06-06
+
 ### Changed
 
 - Store secrets like passwords and token in a keyring provided by the operating
