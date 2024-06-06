@@ -222,6 +222,7 @@ impl TaskPickerApp {
                     }
                     if ui.button("Discard").clicked() {
                         self.edit_source = None;
+                        self.currently_edited_secret.clear();
                     }
                 });
             }
@@ -419,7 +420,9 @@ impl TaskPickerApp {
                 if let Some(i) = remove_source {
                     self.task_manager.remove_source(i);
                 } else if let Some(i) = edit_source {
-                    self.edit_source = Some(self.task_manager.sources()[i].0.clone());
+                    let source = self.task_manager.sources()[i].0.clone();
+                    self.currently_edited_secret = source.secret().unwrap_or_default();
+                    self.edit_source = Some(source);
                     self.existing_edit_source = true;
                 }
 
