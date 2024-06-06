@@ -6,6 +6,7 @@ mod openproject;
 pub use caldav::CalDavSource;
 pub use github::GitHubSource;
 pub use gitlab::GitLabSource;
+use keyring::Entry;
 pub use openproject::OpenProjectSource;
 
 use serde::{Deserialize, Serialize};
@@ -50,5 +51,12 @@ impl TaskSource {
             TaskSource::GitLab(_) => GITLAB_ICON,
             TaskSource::OpenProject(_) => OPENPROJECT_ICON,
         }
+    }
+
+    /// Returns the secret (e.g. a password or a token) for this task source.
+    pub fn secret(&self) -> Option<String> {
+        let keyring_entry = Entry::new("task-picker", self.name()).ok()?;
+        let secret = keyring_entry.get_password().ok()?;
+        Some(secret)
     }
 }

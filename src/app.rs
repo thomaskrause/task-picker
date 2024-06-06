@@ -53,11 +53,15 @@ pub struct TaskPickerApp {
     #[serde(skip)]
     edit_source: Option<TaskSource>,
     #[serde(skip)]
+    currently_edited_secret: String,
+    #[serde(skip)]
     existing_edit_source: bool,
     #[serde(skip)]
     connection_error_for_source: HashSet<String>,
     #[serde(skip)]
     overwrite_current_time: Option<DateTime<Utc>>,
+    #[serde(skip)]
+    app_version: String,
 }
 
 impl Default for TaskPickerApp {
@@ -71,10 +75,12 @@ impl Default for TaskPickerApp {
                 .unwrap_or_else(Instant::now),
             settings,
             edit_source: None,
+            currently_edited_secret: String::default(),
             messages: Toasts::default(),
             existing_edit_source: false,
             connection_error_for_source: HashSet::default(),
             overwrite_current_time: None,
+            app_version: env!("CARGO_PKG_VERSION").to_string(),
         }
     }
 }
@@ -139,7 +145,10 @@ impl TaskPickerApp {
                         });
                         ui.horizontal(|ui| {
                             ui.label("Password");
-                            ui.add(TextEdit::singleline(&mut source.password).password(true));
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                     TaskSource::GitHub(source) => {
@@ -157,7 +166,10 @@ impl TaskPickerApp {
                         });
                         ui.horizontal(|ui| {
                             ui.label("API Token");
-                            ui.text_edit_singleline(&mut source.token);
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                     TaskSource::GitLab(source) => {
@@ -179,7 +191,10 @@ impl TaskPickerApp {
                         });
                         ui.horizontal(|ui| {
                             ui.label("API Token");
-                            ui.text_edit_singleline(&mut source.token);
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                     TaskSource::OpenProject(source) => {
@@ -198,20 +213,28 @@ impl TaskPickerApp {
 
                         ui.horizontal(|ui| {
                             ui.label("API Token");
-                            ui.text_edit_singleline(&mut source.token);
+                            ui.add(
+                                TextEdit::singleline(&mut self.currently_edited_secret)
+                                    .password(true),
+                            );
                         });
                     }
                 }
                 ui.horizontal(|ui| {
                     if ui.button("Save").clicked() {
                         if let Some(source) = &self.edit_source {
-                            self.task_manager.add_or_replace_source(source.clone());
+                            self.task_manager.add_or_replace_source(
+                                source.clone(),
+                                &self.currently_edited_secret,
+                            );
                         }
                         self.edit_source = None;
+                        self.currently_edited_secret.clear();
                         self.trigger_refresh(true, ctx.clone());
                     }
                     if ui.button("Discard").clicked() {
                         self.edit_source = None;
+                        self.currently_edited_secret.clear();
                     }
                 });
             }
@@ -346,7 +369,7 @@ impl TaskPickerApp {
     pub fn render(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
-                ui.label(format!("Version {}", env!("CARGO_PKG_VERSION")));
+                ui.label(format!("Version {}", self.app_version));
                 ui.separator();
 
                 let style: Style = (*ui.ctx().style()).clone();
@@ -409,7 +432,9 @@ impl TaskPickerApp {
                 if let Some(i) = remove_source {
                     self.task_manager.remove_source(i);
                 } else if let Some(i) = edit_source {
-                    self.edit_source = Some(self.task_manager.sources()[i].0.clone());
+                    let source = self.task_manager.sources()[i].0.clone();
+                    self.currently_edited_secret = source.secret().unwrap_or_default();
+                    self.edit_source = Some(source);
                     self.existing_edit_source = true;
                 }
 

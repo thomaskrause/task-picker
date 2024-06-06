@@ -16,7 +16,6 @@ pub struct GitLabSource {
     pub name: String,
     pub server_url: String,
     pub user_name: String,
-    pub token: String,
 }
 
 impl Default for GitLabSource {
@@ -26,17 +25,21 @@ impl Default for GitLabSource {
             name: "GitLab".to_string(),
             server_url: "https://gitlab.com/api/v4/".to_string(),
             user_name: Default::default(),
-            token: Default::default(),
         }
     }
 }
 
 impl GitLabSource {
-    fn query_todos(&self) -> Result<Vec<Task>> {
-        let request = self
+    fn query_todos<S>(&self, secret: Option<S>) -> Result<Vec<Task>>
+    where
+        S: AsRef<str>,
+    {
+        let mut request = self
             .agent
-            .get(&format!("{}/todos?state=pending", self.server_url,))
-            .set("PRIVATE-TOKEN", &self.token);
+            .get(&format!("{}/todos?state=pending", self.server_url,));
+        if let Some(secret) = secret {
+            request = request.set("PRIVATE-TOKEN", secret.as_ref());
+        }
         let response = request.call()?;
         let body = response.into_string()?;
         let all_todos = json::parse(&body)?;
@@ -86,10 +89,13 @@ impl GitLabSource {
         Ok(result)
     }
 
-    pub fn query_tasks(&self) -> Result<Vec<Task>> {
+    pub fn query_tasks<S>(&self, secret: Option<S>) -> Result<Vec<Task>>
+    where
+        S: AsRef<str>,
+    {
         let mut result = Vec::default();
 
-        let todos = self.query_todos()?;
+        let todos = self.query_todos(secret)?;
         result.extend(todos);
 
         Ok(result)
