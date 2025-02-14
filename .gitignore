@@ -1,2 +1,10 @@
 /target
 /dist
+
+# code coverage artifacts
+*.lcov
+
+# Test snapshot files
+**/tests/snapshots/**/*.diff.png
+**/tests/snapshots/**/*.new.png
+**/tests/snapshots/**/*.old.png

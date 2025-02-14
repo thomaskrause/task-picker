@@ -29,7 +29,7 @@ jobs:
       - name: Run tests with code coverage
         run: ./test_coverage.sh
       - name: Upload code coverage for ref branch
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ref-lcov.info
           path: ./target/coverage/tests.lcov
@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Download code coverage report from base branch
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: ref-lcov.info
       - run: sudo apt-get update
@@ -67,7 +67,7 @@ jobs:
           send-summary-comment: true
           show-annotations: "warning" # Possible options warning|error
       - name: Upload screenshots for failed UI tests
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
           name: actual-screenshots
