@@ -26,6 +26,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "Task Picker",
         native_options,
-        Box::new(|cc| Box::new(task_picker::TaskPickerApp::new(cc))),
+        Box::new(|cc| Ok(Box::new(task_picker::TaskPickerApp::new(cc)))),
     )
 }

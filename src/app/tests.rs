@@ -1,7 +1,7 @@
 use std::{sync::Once, vec};
 
 use chrono::Days;
-use egui_screenshot_testing::TestBackend;
+use egui_kittest::Harness;
 
 use super::*;
 
@@ -13,7 +13,6 @@ fn test_render_single_task_with_description() {
     let now = Utc.with_ymd_and_hms(2022, 03, 19, 17, 42, 00).unwrap();
     let mut app = TaskPickerApp::default();
 
-    app.settings.dark_mode = true;
     app.overwrite_current_time = Some(now);
     app.app_version = "0.0.0".to_string();
 
@@ -29,17 +28,14 @@ fn test_render_single_task_with_description() {
     app.task_manager.expect_sources().return_const(vec![]);
     app.task_manager.expect_refresh().return_const(());
 
-    let mut backend = TestBackend::new("src/app/tests/expected", "src/app/tests/actual", |ctx| {
-        app.init_with_egui_context(ctx)
+    let mut harness = Harness::new(|ctx| {
+        ctx.set_theme(egui::Theme::Dark);
+        app.init_with_egui_context(ctx);
+        app.render(ctx);
     });
-    backend.assert_screenshot_after_n_frames(
-        "single_task_with_description.png",
-        (800, 600),
-        5,
-        |ctx| {
-            app.render(ctx);
-        },
-    );
+    harness.set_size(Vec2::new(800.0, 600.0));
+    harness.run_steps(5);
+    harness.snapshot("single_task_with_description");
 }
 
 #[test]
@@ -47,7 +43,7 @@ fn test_render_task_grid() {
     INIT.call_once(|| std::env::set_var("TZ", "CET"));
     let now = Utc.with_ymd_and_hms(2023, 03, 19, 17, 42, 00).unwrap();
     let mut app = TaskPickerApp::default();
-    app.settings.dark_mode = false;
+
     app.overwrite_current_time = Some(now);
     app.app_version = "0.0.0".to_string();
 
@@ -83,10 +79,12 @@ fn test_render_task_grid() {
     app.task_manager.expect_sources().return_const(vec![]);
     app.task_manager.expect_refresh().return_const(());
 
-    let mut backend = TestBackend::new("src/app/tests/expected", "src/app/tests/actual", |ctx| {
-        app.init_with_egui_context(ctx)
-    });
-    backend.assert_screenshot_after_n_frames("task_grid.png", (800, 600), 2, |ctx| {
+    let mut harness = Harness::new(|ctx| {
+        ctx.set_theme(egui::Theme::Light);
+        app.init_with_egui_context(ctx);
         app.render(ctx);
     });
+    harness.set_size(Vec2::new(800.0, 600.0));
+    harness.run_steps(5);
+    harness.snapshot("task_grid");
 }

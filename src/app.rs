@@ -11,9 +11,7 @@ use crate::{
 };
 use chrono::prelude::*;
 use eframe::epaint::ahash::HashSet;
-use egui::{
-    Color32, Context, Layout, RichText, ScrollArea, Slider, Style, TextEdit, Ui, Vec2, Visuals,
-};
+use egui::{Color32, Context, Layout, RichText, ScrollArea, Slider, TextEdit, Ui, Vec2};
 use egui_notify::{Toast, Toasts};
 use ellipse::Ellipse;
 use itertools::Itertools;
@@ -28,14 +26,12 @@ const BOX_WIDTH: f32 = 220.0;
 #[serde(default)]
 struct Settings {
     refresh_rate_seconds: u64,
-    dark_mode: bool,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             refresh_rate_seconds: 15,
-            dark_mode: false,
         }
     }
 }
@@ -105,12 +101,6 @@ impl TaskPickerApp {
     }
 
     pub fn init_with_egui_context(&self, ctx: &egui::Context) {
-        if self.settings.dark_mode {
-            ctx.set_visuals(Visuals::dark());
-        } else {
-            ctx.set_visuals(Visuals::light());
-        }
-
         let mut fonts = egui::epaint::text::FontDefinitions::default();
         egui_phosphor::add_to_fonts(&mut fonts, egui_phosphor::Variant::Regular);
         ctx.set_fonts(fonts);
@@ -253,7 +243,7 @@ impl TaskPickerApp {
             let size = Vec2::new(BOX_WIDTH, 250.0);
             ui.set_min_size(size);
             ui.set_max_size(size);
-            ui.style_mut().wrap = Some(true);
+            ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Wrap);
 
             ui.vertical(|ui| {
                 let task_is_selected = Some(task.get_id()) == self.selected_task;
@@ -361,7 +351,7 @@ impl TaskPickerApp {
 
         if manually_triggered {
             let mut msg = Toast::info("Refreshing task list in the background");
-            msg.set_duration(Some(Duration::from_secs(1)));
+            msg.duration(Some(Duration::from_secs(1)));
             self.messages.add(msg);
         }
     }
@@ -371,14 +361,7 @@ impl TaskPickerApp {
             ui.with_layout(Layout::right_to_left(egui::Align::Max), |ui| {
                 ui.label(format!("Version {}", self.app_version));
                 ui.separator();
-
-                let style: Style = (*ui.ctx().style()).clone();
-                let new_visuals = style.visuals.light_dark_small_toggle_button(ui);
-                if let Some(visuals) = new_visuals {
-                    self.settings.dark_mode = visuals.dark_mode;
-                    ui.ctx().set_visuals(visuals);
-                }
-
+                egui::widgets::global_theme_preference_switch(ui);
                 ui.separator();
 
                 ui.add(
