@@ -1,3 +1,7 @@
+📢 This project has been moved to Codeberg: <https://codeberg.org/thomaskrause/task-picker>
+
+---
+
 # <img src="https://raw.githubusercontent.com/thomaskrause/task-picker/main/src/bin/taskpicker.png" height="18px" alt="Logo of Task Picker which is a list or rectangles arranged in a grid, representing the tasks">  Task Picker
 
 ![A screenshot of Task Picker with several example tasks shown](screenshot.png)
